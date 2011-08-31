@@ -50,25 +50,25 @@ service.
 
     # Modify records
     $r53->change_resource_record_sets(zone_id => $zone->{id},
-                                      changes => [
-                                          {
-                                              action => 'delete',
-                                              name => 'www.example.com.',
-                                              type => 'A',
-                                              ttl => 86400,
-                                              value => '12.34.56.78'
-                                          },
-                                          {
-                                              action => 'create',
-                                              name => 'www.example.com.',
-                                              type => 'A',
-                                              ttl => 86400,
-                                              records => [
-                                                  '34.56.78.90',
-                                                  '56.78.90.12'
-                                              ]
-                                          }
-                                      ]);
+        changes => [
+            {
+                action => 'delete',
+                name => 'www.example.com.',
+                type => 'A',
+                ttl => 86400,
+                value => '12.34.56.78'
+            },
+            {
+                action => 'create',
+                name => 'www.example.com.',
+                type => 'A',
+                ttl => 86400,
+                records => [
+                    '34.56.78.90',
+                    '56.78.90.12'
+                ]
+            }
+        ]);
 
 =cut
 
@@ -859,8 +859,8 @@ just one value, you can use the C<value> parameter instead.
 
 =item * value
 
-Current or new DNS record value. For multiple record values in the same change,
-use the C<records> parameter.
+Current or new DNS record value. For multiple record values, use the C<records>
+parameter.
 
 =back
 
