@@ -17,11 +17,11 @@ WebService::Amazon::Route53 - Perl interface to Amazon Route 53 API
 
 =head1 VERSION
 
-Version 0.01
+Version 0.011
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.011';
 
 =head1 SYNOPSIS
 
@@ -807,7 +807,7 @@ Makes changes to DNS record sets.
             ]);
         
 If there is just one change to be made, you can use the simplified call syntax,
-and pass the change parameters immediately, instead of using the C<changes>
+and pass the change parameters directly, instead of using the C<changes>
 parameter: 
 
     $change_info = $r53->change_resource_record_sets(zone_id => '123ZONEID',
@@ -828,7 +828,8 @@ B<(Required)> Hosted zone ID.
 =item * changes
 
 B<(Required)> A reference to an array of hashes, describing the changes to be
-made. If there is just one change, it may be omitted and ...
+made. If there is just one change, the array may be omitted and change
+parameters may be passed directly.
 
 =back
 

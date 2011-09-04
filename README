@@ -2,7 +2,7 @@ NAME
     WebService::Amazon::Route53 - Perl interface to Amazon Route 53 API
 
 VERSION
-    Version 0.01
+    Version 0.011
 
 SYNOPSIS
     WebService::Amazon::Route53 provides an interface to Amazon Route 53 DNS
@@ -30,25 +30,25 @@ SYNOPSIS
 
         # Modify records
         $r53->change_resource_record_sets(zone_id => $zone->{id},
-                                          changes => [
-                                              {
-                                                  action => 'delete',
-                                                  name => 'www.example.com.',
-                                                  type => 'A',
-                                                  ttl => 86400,
-                                                  value => '12.34.56.78'
-                                              },
-                                              {
-                                                  action => 'create',
-                                                  name => 'www.example.com.',
-                                                  type => 'A',
-                                                  ttl => 86400,
-                                                  records => [
-                                                      '34.56.78.90',
-                                                      '56.78.90.12'
-                                                  ]
-                                              }
-                                          ]);
+            changes => [
+                {
+                    action => 'delete',
+                    name => 'www.example.com.',
+                    type => 'A',
+                    ttl => 86400,
+                    value => '12.34.56.78'
+                },
+                {
+                    action => 'create',
+                    name => 'www.example.com.',
+                    type => 'A',
+                    ttl => 86400,
+                    records => [
+                        '34.56.78.90',
+                        '56.78.90.12'
+                    ]
+                }
+            ]);
 
 METHODS
     Required parameters are marked as such, other parameters are optional.
@@ -325,7 +325,7 @@ METHODS
                 ]);
 
     If there is just one change to be made, you can use the simplified call
-    syntax, and pass the change parameters immediately, instead of using the
+    syntax, and pass the change parameters directly, instead of using the
     "changes" parameter:
 
         $change_info = $r53->change_resource_record_sets(zone_id => '123ZONEID',
@@ -344,7 +344,8 @@ METHODS
     *   changes
 
         (Required) A reference to an array of hashes, describing the changes
-        to be made. If there is just one change, it may be omitted and ...
+        to be made. If there is just one change, the array may be omitted
+        and change parameters may be passed directly.
 
     Change parameters:
 
@@ -372,8 +373,8 @@ METHODS
 
     *   value
 
-        Current or new DNS record value. For multiple record values in the
-        same change, use the "records" parameter.
+        Current or new DNS record value. For multiple record values, use the
+        "records" parameter.
 
     Returns: A reference to a hash containing change information. Example:
 
