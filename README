@@ -2,7 +2,7 @@ NAME
     WebService::Amazon::Route53 - Perl interface to Amazon Route 53 API
 
 VERSION
-    Version 0.011
+    Version 0.012
 
 SYNOPSIS
     WebService::Amazon::Route53 provides an interface to Amazon Route 53 DNS
@@ -226,7 +226,8 @@ METHODS
 
     Called in list context:
 
-        ($record_sets, $next_record) = $r53->list_resource_record_sets;
+        ($record_sets, $next_record) =
+            $r53->list_resource_record_sets(zone_id => '123ZONEID');
 
     Parameters:
 
@@ -351,15 +352,15 @@ METHODS
 
     *   action
 
-        The action to perform ("create" or "delete").
+        (Required) The action to perform ("create" or "delete").
 
     *   name
 
-        The name of the domain to perform the action on.
+        (Required) The name of the domain to perform the action on.
 
     *   type
 
-        The DNS record type.
+        (Required) The DNS record type.
 
     *   ttl
 

@@ -17,11 +17,11 @@ WebService::Amazon::Route53 - Perl interface to Amazon Route 53 API
 
 =head1 VERSION
 
-Version 0.011
+Version 0.012
 
 =cut
 
-our $VERSION = '0.011';
+our $VERSION = '0.012';
 
 =head1 SYNOPSIS
 
@@ -618,7 +618,8 @@ Called in scalar context:
     
 Called in list context:
 
-    ($record_sets, $next_record) = $r53->list_resource_record_sets;
+    ($record_sets, $next_record) =
+        $r53->list_resource_record_sets(zone_id => '123ZONEID');
     
 Parameters:
 
@@ -839,15 +840,15 @@ Change parameters:
 
 =item * action
 
-The action to perform (C<"create"> or C<"delete">).
+B<(Required)> The action to perform (C<"create"> or C<"delete">).
 
 =item * name
 
-The name of the domain to perform the action on.
+B<(Required)> The name of the domain to perform the action on.
 
 =item * type
 
-The DNS record type.
+B<(Required)> The DNS record type.
 
 =item * ttl
 
