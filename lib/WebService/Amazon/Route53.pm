@@ -17,11 +17,11 @@ WebService::Amazon::Route53 - Perl interface to Amazon Route 53 API
 
 =head1 VERSION
 
-Version 0.012
+Version 0.013
 
 =cut
 
-our $VERSION = '0.012';
+our $VERSION = '0.013';
 
 =head1 SYNOPSIS
 
@@ -427,7 +427,7 @@ sub find_hosted_zone {
         }
         else {
             # Get the marker from the last returned zone
-            ($marker = $zone->{'id'}) =~ s!^/hostedzone/!!;
+            ($marker = $zones->[@$zones-1]->{'id'}) =~ s!^/hostedzone/!!;
         }
     }
     
@@ -856,8 +856,8 @@ The DNS record time to live (TTL), in seconds.
 
 =item * records
 
-An array of strings that represent the current or new record values. If there is
-just one value, you can use the C<value> parameter instead.
+A reference to an array of strings that represent the current or new record
+values. If there is just one value, you can use the C<value> parameter instead.
 
 =item * value
 
