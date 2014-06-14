@@ -3,6 +3,10 @@ package WebService::Amazon::Route53;
 use warnings;
 use strict;
 
+# ABSTRACT: Perl interface to Amazon Route 53 API
+
+# VERSION
+
 use Carp;
 use Digest::HMAC_SHA1;
 use LWP::UserAgent;
@@ -10,18 +14,6 @@ use MIME::Base64;
 use Tie::IxHash;
 use URI::Escape;
 use XML::Simple;
-
-=head1 NAME
-
-WebService::Amazon::Route53 - Perl interface to Amazon Route 53 API
-
-=head1 VERSION
-
-Version 0.013
-
-=cut
-
-our $VERSION = '0.013';
 
 =head1 SYNOPSIS
 
@@ -997,73 +989,11 @@ sub error {
     return $self->{error};
 }
 
-=head1 AUTHOR
-
-Michal Wojciechowski, C<< <odyniec at cpan.org> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-webservice-amazon-route53 at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Amazon-Route53>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc WebService::Amazon::Route53
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Amazon-Route53>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/WebService-Amazon-Route53>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/WebService-Amazon-Route53>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/WebService-Amazon-Route53/>
-
-=back
-
-
 =head1 SEE ALSO
 
-=over 4
+=for :list
 
-=item * Amazon Route 53 API Reference
-
-L<http://docs.amazonwebservices.com/Route53/latest/APIReference/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2011 Michal Wojciechowski.
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
-
+* L<http://docs.amazonwebservices.com/Route53/latest/APIReference/> - Amazon Route 53 API Reference
 
 =cut
 

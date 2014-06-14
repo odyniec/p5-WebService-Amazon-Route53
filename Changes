@@ -1,14 +1,17 @@
 Revision history for WebService-Amazon-Route53
 
-0.013   2012-06-10
-        Fixed infinite loop problem when searching through more than 100 zones.
-        [RT #77407]
+{{$NEXT}}
+          Switched to using Dist::Zilla.
 
-0.012   2011-09-07
-        Updated documentation.
+0.013     2012-06-10
+          Fixed infinite loop problem when searching through more than 100 zones.
+          [RT #77407]
 
-0.011   2011-09-04
-        Updated documentation.
+0.012     2011-09-07
+          Updated documentation.
+
+0.011     2011-09-04
+          Updated documentation.
         
-0.01    2011-08-31
-        First version, released on an unsuspecting world.
+0.01      2011-08-31
+          First version, released on an unsuspecting world.
