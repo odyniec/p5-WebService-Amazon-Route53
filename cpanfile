@@ -18,11 +18,13 @@ on 'test' => sub {
   requires "IPC::Open3" => "0";
   requires "List::Util" => "0";
   requires "Test::More" => "0";
+  requires "perl" => "5.006";
+  requires "version" => "0";
 };
 
 on 'test' => sub {
   recommends "CPAN::Meta" => "0";
-  recommends "CPAN::Meta::Requirements" => "0";
+  recommends "CPAN::Meta::Requirements" => "2.120900";
 };
 
 on 'configure' => sub {
