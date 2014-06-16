@@ -993,7 +993,7 @@ sub error {
 
 =for :list
 
-* L<http://docs.amazonwebservices.com/Route53/latest/APIReference/> - Amazon Route 53 API Reference
+* L<Amazon Route 53 API Reference|http://docs.amazonwebservices.com/Route53/latest/APIReference/>
 
 =cut
 
