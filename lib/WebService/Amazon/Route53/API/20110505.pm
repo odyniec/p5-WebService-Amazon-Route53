@@ -34,7 +34,8 @@ sub new {
     $self->{'xs'} = XML::Simple->new;
     
     $self->{'ua'} = LWP::UserAgent->new;
-    #$self->{'ua'}->agent("WebService::Amazon::Route53/$VERSION (Perl)");
+    $self->{'ua'}->agent('WebService::Amazon::Route53/' .
+        $WebService::Amazon::Route53::VERSION . ' (Perl)');
     
     # Last error
     $self->{error} = {};
