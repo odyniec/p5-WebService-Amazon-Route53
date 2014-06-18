@@ -11,6 +11,9 @@ use Tie::IxHash;
 use URI::Escape;
 use XML::Simple;
 
+use WebService::Amazon::Route53::API;
+use parent 'WebService::Amazon::Route53::API';
+
 my $url_base = 'https://route53.amazonaws.com/';
 my $url_api_version = '2011-05-05/';
 my $api_url = $url_base . $url_api_version;
@@ -41,14 +44,6 @@ sub new {
     $self->{error} = {};
 
     return bless $self, $class;
-}
-
-# Amazon expects XML elements in specific order, so we'll need to pass the data
-# to XML::Simple as ordered hashes
-sub _ordered_hash (%) {
-    tie my %hash => 'Tie::IxHash';
-    %hash = @_;
-    \%hash
 }
 
 sub _get_server_date {
