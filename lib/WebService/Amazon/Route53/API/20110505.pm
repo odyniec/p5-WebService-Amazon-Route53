@@ -25,19 +25,6 @@ sub new {
     return $self;
 }
 
-sub _get_server_date {
-    my ($self) = @_;
-    
-    my $response = $self->{'ua'}->get($self->{base_url} . 'date');
-    my $date = $response->headers->header('Date');
-    
-    if (!$date) {
-        carp "Can't get Amazon server date";
-    }
-    
-    return $date;
-}
-
 sub _send_request {
     my ($self, $request) = @_;
     

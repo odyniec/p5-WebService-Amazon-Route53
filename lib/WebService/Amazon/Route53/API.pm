@@ -42,6 +42,19 @@ sub new {
     return bless $self, $class;
 }
 
+sub _get_server_date {
+    my ($self) = @_;
+    
+    my $response = $self->{ua}->get($self->{base_url} . 'date');
+    my $date = $response->headers->header('Date');
+    
+    if (!$date) {
+        carp "Can't get Amazon server date";
+    }
+    
+    return $date;    
+}
+
 # Amazon expects XML elements in specific order, so we'll need to pass the data
 # to XML::Simple as ordered hashes
 sub _ordered_hash (%) {
