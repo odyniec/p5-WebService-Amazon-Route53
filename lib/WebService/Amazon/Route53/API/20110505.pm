@@ -4,9 +4,6 @@ use warnings;
 use strict;
 
 use Carp;
-use Digest::HMAC_SHA1;
-use MIME::Base64;
-use Tie::IxHash;
 use URI::Escape;
 use XML::Simple;
 
