@@ -755,7 +755,7 @@ sub change_resource_record_sets {
     );
     
     foreach my $change (@$changes) {
-        my $change_data = {
+        my $change_data = _ordered_hash(
             'Action' => [ uc $change->{action} ],
             'ResourceRecordSet' => _ordered_hash(
                 'Name' => [ $change->{name} ],
@@ -767,7 +767,7 @@ sub change_resource_record_sets {
                     }
                 ]
             )
-        };
+        );
         
         if (exists $change->{records}) {
             foreach my $value (@{$change->{records}}) {
