@@ -23,7 +23,8 @@ sub new {
 
     my $self = $class->SUPER::new(%args);
 
-    $self->{api_url} = $self->{base_url} . '2011-05-05/';
+    $self->{api_version} = '2011-05-05';
+    $self->{api_url} = $self->{base_url} . $self->{api_version} . '/';
 
     return $self;
 }
