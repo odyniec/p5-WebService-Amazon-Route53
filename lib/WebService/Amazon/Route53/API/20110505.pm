@@ -14,10 +14,6 @@ use XML::Simple;
 use WebService::Amazon::Route53::API;
 use parent 'WebService::Amazon::Route53::API';
 
-my $url_base = 'https://route53.amazonaws.com/';
-my $url_api_version = '2011-05-05/';
-my $api_url = $url_base . $url_api_version;
-
 sub new {
     my ($class, %args) = @_;
 
@@ -32,7 +28,7 @@ sub new {
 sub _get_server_date {
     my ($self) = @_;
     
-    my $response = $self->{'ua'}->get($url_base . 'date');
+    my $response = $self->{'ua'}->get($self->{base_url} . 'date');
     my $date = $response->headers->header('Date');
     
     if (!$date) {
@@ -134,7 +130,7 @@ is the last set of results, next marker will be C<undef>.
 sub list_hosted_zones {
     my ($self, %args) = @_;
     
-    my $url = $api_url . 'hostedzone';
+    my $url = $self->{api_url} . 'hostedzone';
     my $separator = '?';
     
     if (defined $args{'marker'}) {
@@ -225,7 +221,7 @@ sub get_hosted_zone {
     # Strip off the "/hostedzone/" part, if present
     $zone_id =~ s!^/hostedzone/!!;
 
-    my $url = $api_url . 'hostedzone/' . $zone_id;
+    my $url = $self->{api_url} . 'hostedzone/' . $zone_id;
     
     my $response = $self->_send_request(HTTP::Request->new(GET => $url));
     
@@ -386,7 +382,7 @@ sub create_hosted_zone {
     }
     
     my $data = _ordered_hash(
-        'xmlns' => 'https://route53.amazonaws.com/doc/'. $url_api_version,
+        'xmlns' => $self->{base_url} . 'doc/'. $self->{api_version},
         'Name' => [ $args{'name'} ],
         'CallerReference' => [ $args{'caller_reference'} ],
         'HostedZoneConfig' => $args{'comment'} ? {
@@ -400,7 +396,7 @@ sub create_hosted_zone {
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
     
     my $response = $self->_send_request(HTTP::Request->new(
-        POST => $api_url . 'hostedzone', undef, $xml));
+        POST => $self->{api_url} . 'hostedzone', undef, $xml));
         
     if (!$response->is_success) {
         $self->_parse_error($response->decoded_content);
@@ -477,7 +473,7 @@ sub delete_hosted_zone {
     $zone_id =~ s!^/hostedzone/!!;
 
     my $response = $self->_send_request(HTTP::Request->new(
-        DELETE => $api_url . 'hostedzone/' . $zone_id));
+        DELETE => $self->{api_url} . 'hostedzone/' . $zone_id));
     
     if (!$response->is_success) {
         $self->_parse_error($response->decoded_content);
@@ -587,7 +583,7 @@ sub list_resource_record_sets {
     # Strip off the "/hostedzone/" part, if present
     $zone_id =~ s!^/hostedzone/!!;
 
-    my $url = $api_url . 'hostedzone/' . $zone_id . '/rrset';
+    my $url = $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset';
     my $separator = '?';
     
     if (defined $args{'name'}) {
@@ -795,7 +791,7 @@ sub change_resource_record_sets {
     }
     
     my $data = _ordered_hash(
-        'xmlns' => 'https://route53.amazonaws.com/doc/' . $url_api_version,
+        'xmlns' => $self->{base_url} . 'doc/' . $self->{api_version},
         'ChangeBatch' => {
             'Comment' => $args{'comment'} ? [
                 $args{'comment'}
@@ -843,7 +839,7 @@ sub change_resource_record_sets {
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
         
     my $response = $self->_send_request(HTTP::Request->new(
-        POST => $api_url . 'hostedzone/' . $zone_id . '/rrset', undef, $xml));
+        POST => $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', undef, $xml));
     
     if (!$response->is_success) {
         $self->_parse_error($response->decoded_content);
