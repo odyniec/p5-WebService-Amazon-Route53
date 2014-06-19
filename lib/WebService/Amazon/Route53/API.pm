@@ -57,6 +57,31 @@ sub _get_server_date {
     return $date;    
 }
 
+sub _request {
+    my ($self, $method, $url, $options) = @_;
+    
+    my $date = $self->_get_server_date;
+    
+    my $hmac = Digest::HMAC_SHA1->new($self->{'key'});
+    $hmac->add($date);
+    my $sig = encode_base64($hmac->digest, undef);
+    
+    my $auth = 'AWS3-HTTPS AWSAccessKeyId=' . $self->{'id'} . ',' .
+        'Algorithm=HmacSHA1,Signature=' . $sig;
+    # Remove trailing newlines, if any
+    $auth =~ s/\n//g;
+    
+    $options = {} if !defined $options;
+
+    $options->{headers}->{'Content-Type'} = 'text/xml';
+    $options->{headers}->{'Date'} = $date;
+    $options->{headers}->{'X-Amzn-Authorization'} = $auth;
+    
+    my $response = $self->{ua}->request($method, $url, $options);
+
+    return $response;    
+}
+
 # Amazon expects XML elements in specific order, so we'll need to pass the data
 # to XML::Simple as ordered hashes
 sub _ordered_hash (%) {

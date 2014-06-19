@@ -24,31 +24,6 @@ sub new {
     return $self;
 }
 
-sub _send_request {
-    my ($self, $method, $url, $options) = @_;
-    
-    my $date = $self->_get_server_date;
-    
-    my $hmac = Digest::HMAC_SHA1->new($self->{'key'});
-    $hmac->add($date);
-    my $sig = encode_base64($hmac->digest, undef);
-    
-    my $auth = 'AWS3-HTTPS AWSAccessKeyId=' . $self->{'id'} . ',' .
-        'Algorithm=HmacSHA1,Signature=' . $sig;
-    # Remove trailing newlines, if any
-    $auth =~ s/\n//g;
-    
-    $options = {} if !defined $options;
-
-    $options->{headers}->{'Content-Type'} = 'text/xml';
-    $options->{headers}->{'Date'} = $date;
-    $options->{headers}->{'X-Amzn-Authorization'} = $auth;
-    
-    my $response = $self->{ua}->request($method, $url, $options);
-
-    return $response;
-}
-
 sub _parse_error {
     my ($self, $xml) = @_;
     
@@ -132,7 +107,7 @@ sub list_hosted_zones {
         $url .= $separator . 'maxitems=' . uri_escape($args{'max_items'});
     }
     
-    my $response = $self->_send_request('GET', $url);
+    my $response = $self->_request('GET', $url);
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
@@ -213,7 +188,7 @@ sub get_hosted_zone {
 
     my $url = $self->{api_url} . 'hostedzone/' . $zone_id;
     
-    my $response = $self->_send_request('GET', $url);
+    my $response = $self->_request('GET', $url);
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
@@ -385,7 +360,7 @@ sub create_hosted_zone {
     
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
     
-    my $response = $self->_send_request('POST', $self->{api_url} . 'hostedzone',
+    my $response = $self->_request('POST', $self->{api_url} . 'hostedzone',
         { content => $xml });
         
     if (!$response->{success}) {
@@ -462,7 +437,7 @@ sub delete_hosted_zone {
     # Strip off the "/hostedzone/" part, if present
     $zone_id =~ s!^/hostedzone/!!;
 
-    my $response = $self->_send_request('DELETE',
+    my $response = $self->_request('DELETE',
         $self->{api_url} . 'hostedzone/' . $zone_id);
     
     if (!$response->{success}) {
@@ -595,7 +570,7 @@ sub list_resource_record_sets {
         $url .= $separator . 'maxitems=' . uri_escape($args{'max_items'});
     }
     
-    my $response = $self->_send_request('GET', $url);
+    my $response = $self->_request('GET', $url);
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
@@ -828,7 +803,7 @@ sub change_resource_record_sets {
         
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
         
-    my $response = $self->_send_request('POST', 
+    my $response = $self->_request('POST', 
         $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', 
         { content => $xml });
     
