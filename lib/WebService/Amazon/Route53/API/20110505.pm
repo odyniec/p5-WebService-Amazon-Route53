@@ -21,18 +21,6 @@ sub new {
     return $self;
 }
 
-sub _parse_error {
-    my ($self, $xml) = @_;
-    
-    my $data = $self->{xs}->XMLin($xml);
-    
-    $self->{error} = {
-        type => $data->{Error}->{Type},
-        code => $data->{Error}->{Code},
-        message => $data->{Error}->{Message}
-    };
-}
-
 =head2 list_hosted_zones
 
 Gets a list of hosted zones.

@@ -85,6 +85,18 @@ sub _request {
     return $response;    
 }
 
+sub _parse_error {
+    my ($self, $xml) = @_;
+    
+    my $data = $self->{xs}->XMLin($xml);
+    
+    $self->{error} = {
+        type => $data->{Error}->{Type},
+        code => $data->{Error}->{Code},
+        message => $data->{Error}->{Message}
+    };
+}
+
 # Amazon expects XML elements in specific order, so we'll need to pass the data
 # to XML::Simple as ordered hashes
 sub _ordered_hash (%) {
