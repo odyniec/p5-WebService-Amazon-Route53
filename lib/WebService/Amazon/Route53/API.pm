@@ -4,7 +4,10 @@ use warnings;
 use strict;
 
 use Carp;
+use Digest::HMAC_SHA1;
 use HTTP::Tiny;
+use MIME::Base64;
+use Tie::IxHash;
 use XML::Simple;
 
 require Exporter;
