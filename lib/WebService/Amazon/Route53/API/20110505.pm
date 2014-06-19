@@ -18,6 +18,16 @@ my $url_base = 'https://route53.amazonaws.com/';
 my $url_api_version = '2011-05-05/';
 my $api_url = $url_base . $url_api_version;
 
+sub new {
+    my ($class, %args) = @_;
+
+    my $self = $class->SUPER::new(%args);
+
+    $self->{api_url} = $self->{base_url} . '2011-05-05/';
+
+    return $self;
+}
+
 sub _get_server_date {
     my ($self) = @_;
     

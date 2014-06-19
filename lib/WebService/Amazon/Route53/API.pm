@@ -37,6 +37,8 @@ sub new {
     # Keep track of the last error
     $self->{error} = {};
 
+    $self->{base_url} = 'https://route53.amazonaws.com/';
+
     return bless $self, $class;
 }
 
