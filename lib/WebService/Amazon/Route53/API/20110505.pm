@@ -5,7 +5,6 @@ use strict;
 
 use Carp;
 use Digest::HMAC_SHA1;
-use LWP::UserAgent;
 use MIME::Base64;
 use Tie::IxHash;
 use URI::Escape;
@@ -26,7 +25,7 @@ sub new {
 }
 
 sub _send_request {
-    my ($self, $request) = @_;
+    my ($self, $method, $url, $options) = @_;
     
     my $date = $self->_get_server_date;
     
@@ -36,13 +35,17 @@ sub _send_request {
     
     my $auth = 'AWS3-HTTPS AWSAccessKeyId=' . $self->{'id'} . ',' .
         'Algorithm=HmacSHA1,Signature=' . $sig;
+    # Remove trailing newlines, if any
+    $auth =~ s/\n//g;
     
-    $request->header('Content-Type' => 'text/xml');
-    $request->header('Date' => $date);
-    $request->header('X-Amzn-Authorization' => $auth);
+    $options = {} if !defined $options;
+
+    $options->{headers}->{'Content-Type'} = 'text/xml';
+    $options->{headers}->{'Date'} = $date;
+    $options->{headers}->{'X-Amzn-Authorization'} = $auth;
     
-    my $response = $self->{'ua'}->request($request);
-    
+    my $response = $self->{ua}->request($method, $url, $options);
+
     return $response;
 }
 
@@ -129,15 +132,15 @@ sub list_hosted_zones {
         $url .= $separator . 'maxitems=' . uri_escape($args{'max_items'});
     }
     
-    my $response = $self->_send_request(HTTP::Request->new(GET => $url));
+    my $response = $self->_send_request('GET', $url);
     
-    if (!$response->is_success) {
-        $self->_parse_error($response->decoded_content);
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
         return undef;
     }
     
     # Parse the returned XML data
-    my $data = $self->{'xs'}->XMLin($response->decoded_content,
+    my $data = $self->{'xs'}->XMLin($response->{content},
         ForceArray => [ 'HostedZone' ]);
     my $zones = [];
     my $next_marker;
@@ -210,14 +213,14 @@ sub get_hosted_zone {
 
     my $url = $self->{api_url} . 'hostedzone/' . $zone_id;
     
-    my $response = $self->_send_request(HTTP::Request->new(GET => $url));
+    my $response = $self->_send_request('GET', $url);
     
-    if (!$response->is_success) {
-        $self->_parse_error($response->decoded_content);
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
         return undef;
     }
     
-    my $data = $self->{'xs'}->XMLin($response->decoded_content,
+    my $data = $self->{'xs'}->XMLin($response->{content},
         ForceArray => [ 'NameServer' ]);
     
     my $zone = {
@@ -382,15 +385,15 @@ sub create_hosted_zone {
     
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
     
-    my $response = $self->_send_request(HTTP::Request->new(
-        POST => $self->{api_url} . 'hostedzone', undef, $xml));
+    my $response = $self->_send_request('POST', $self->{api_url} . 'hostedzone',
+        { content => $xml });
         
-    if (!$response->is_success) {
-        $self->_parse_error($response->decoded_content);
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
         return undef;
     }
     
-    $data = $self->{xs}->XMLin($response->decoded_content,
+    $data = $self->{xs}->XMLin($response->{content},
         ForceArray => [ 'NameServer']);
     
     my $ret = {
@@ -459,15 +462,15 @@ sub delete_hosted_zone {
     # Strip off the "/hostedzone/" part, if present
     $zone_id =~ s!^/hostedzone/!!;
 
-    my $response = $self->_send_request(HTTP::Request->new(
-        DELETE => $self->{api_url} . 'hostedzone/' . $zone_id));
+    my $response = $self->_send_request('DELETE',
+        $self->{api_url} . 'hostedzone/' . $zone_id);
     
-    if (!$response->is_success) {
-        $self->_parse_error($response->decoded_content);
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
         return undef;
     }
     
-    my $data = $self->{xs}->XMLin($response->decoded_content);
+    my $data = $self->{xs}->XMLin($response->{content});
         
     my $change_info = {
         id => $data->{ChangeInfo}->{Id},
@@ -592,14 +595,14 @@ sub list_resource_record_sets {
         $url .= $separator . 'maxitems=' . uri_escape($args{'max_items'});
     }
     
-    my $response = $self->_send_request(HTTP::Request->new(GET => $url));
+    my $response = $self->_send_request('GET', $url);
     
-    if (!$response->is_success) {
-        $self->_parse_error($response->decoded_content);
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
         return undef;
     }
     
-    my $data = $self->{'xs'}->XMLin($response->decoded_content,
+    my $data = $self->{'xs'}->XMLin($response->{content},
         ForceArray => [ 'ResourceRecordSet', 'ResourceRecord' ]);
     
     my $record_sets = [];
@@ -825,15 +828,16 @@ sub change_resource_record_sets {
         
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
         
-    my $response = $self->_send_request(HTTP::Request->new(
-        POST => $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', undef, $xml));
+    my $response = $self->_send_request('POST', 
+        $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', 
+        { content => $xml });
     
-    if (!$response->is_success) {
-        $self->_parse_error($response->decoded_content);
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
         return undef;
     }
 
-    $data = $self->{xs}->XMLin($response->decoded_content);
+    $data = $self->{xs}->XMLin($response->{content});
         
     my $change_info = {
         id => $data->{ChangeInfo}->{Id},

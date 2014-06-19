@@ -4,6 +4,7 @@ use warnings;
 use strict;
 
 use Carp;
+use HTTP::Tiny;
 use XML::Simple;
 
 require Exporter;
@@ -30,9 +31,10 @@ sub new {
     $self->{xs} = XML::Simple->new;
 
     # Initialize the user agent object
-    $self->{ua} = LWP::UserAgent->new;
-    $self->{ua}->agent('WebService::Amazon::Route53/' .
-        $WebService::Amazon::Route53::VERSION . ' (Perl)');
+    $self->{ua} = HTTP::Tiny->new(
+        agent => 'WebService::Amazon::Route53/' .
+            $WebService::Amazon::Route53::VERSION . ' (Perl)'
+    );
 
     # Keep track of the last error
     $self->{error} = {};
@@ -46,7 +48,7 @@ sub _get_server_date {
     my ($self) = @_;
     
     my $response = $self->{ua}->get($self->{base_url} . 'date');
-    my $date = $response->headers->header('Date');
+    my $date = $response->{headers}->{'date'};
     
     if (!$date) {
         carp "Can't get Amazon server date";
