@@ -18,34 +18,6 @@ my $url_base = 'https://route53.amazonaws.com/';
 my $url_api_version = '2011-05-05/';
 my $api_url = $url_base . $url_api_version;
 
-sub new {
-    my ($class, %args) = @_;
-
-    my $self = {};
-
-    if (!defined $args{'id'}) {
-        carp "Required parameter 'id' is not defined";
-    }
-    
-    if (!defined $args{'key'}) {
-        carp "Required parameter 'key' is not defined";
-    }
-    
-    $self->{'id'} = $args{'id'};
-    $self->{'key'} = $args{'key'};
-    
-    $self->{'xs'} = XML::Simple->new;
-    
-    $self->{'ua'} = LWP::UserAgent->new;
-    $self->{'ua'}->agent('WebService::Amazon::Route53/' .
-        $WebService::Amazon::Route53::VERSION . ' (Perl)');
-    
-    # Last error
-    $self->{error} = {};
-
-    return bless $self, $class;
-}
-
 sub _get_server_date {
     my ($self) = @_;
     
