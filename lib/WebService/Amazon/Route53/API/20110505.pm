@@ -332,7 +332,7 @@ sub create_hosted_zone {
     }
     
     my $data = _ordered_hash(
-        'xmlns' => $self->{base_url} . 'doc/'. $self->{api_version},
+        'xmlns' => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
         'Name' => [ $args{'name'} ],
         'CallerReference' => [ $args{'caller_reference'} ],
         'HostedZoneConfig' => $args{'comment'} ? {
@@ -741,7 +741,7 @@ sub change_resource_record_sets {
     }
     
     my $data = _ordered_hash(
-        'xmlns' => $self->{base_url} . 'doc/' . $self->{api_version},
+        'xmlns' => $self->{base_url} . 'doc/' . $self->{api_version} . '/',
         'ChangeBatch' => {
             'Comment' => $args{'comment'} ? [
                 $args{'comment'}
