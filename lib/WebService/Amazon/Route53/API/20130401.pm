@@ -46,7 +46,7 @@ Returns: A reference to a hash containing zone data, and a next marker if more
 zones are available. Example:
 
     $response = {
-        hosted_zones => [
+        'hosted_zones' => [
             {
                 'id' => '/hostedzone/123ZONEID',
                 'name' => 'example.com.',
@@ -66,7 +66,7 @@ zones are available. Example:
                 'resource_record_set_count' => '7'
             }
         ],
-        next_marker => '456ZONEID'
+        'next_marker' => '456ZONEID'
     ];
     
 When called in list context, it also returns the next marker to pass to a
