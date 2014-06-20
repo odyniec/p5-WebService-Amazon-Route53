@@ -107,9 +107,9 @@ sub list_hosted_zones {
     
     foreach my $zone_data (@{$data->{HostedZones}->{HostedZone}}) {
         my $zone = {
-           'id' => $zone_data->{Id},
-           'name' => $zone_data->{Name},
-           'caller_reference' => $zone_data->{CallerReference},
+            'id' => $zone_data->{Id},
+            'name' => $zone_data->{Name},
+            'caller_reference' => $zone_data->{CallerReference},
         };
         
         if (exists $zone_data->{Config}) {
