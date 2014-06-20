@@ -225,8 +225,124 @@ sub find_hosted_zone {
     return WebService::Amazon::Route53::API::20110505::find_hosted_zone(@_);
 }
 
+=head2 create_hosted_zone
+
+Creates a new hosted zone.
+
+    $response = $r53->create_hosted_zone(name => 'example.com.',
+                                         caller_reference => 'example.com_01');
+
+Parameters:
+
+=over 4
+
+=item * name
+
+B<(Required)> New hosted zone name.
+
+=item * caller_reference
+
+B<(Required)> A unique string that identifies the request.
+
+=back
+
+Returns: A reference to a hash containing new zone data, change description,
+and name servers information. Example:
+
+    $response = {
+        'hosted_zone' => {
+            'id' => '/hostedzone/123ZONEID'
+            'name' => 'example.com.',
+            'caller_reference' => 'example.com_01',
+            'config' => {},
+            'resource_record_set_count' => '2'
+        },
+        'change_info' => {
+            'id' => '/change/123CHANGEID'
+            'submitted_at' => '2011-08-30T23:54:53.221Z',
+            'status' => 'PENDING'
+        },
+        'delegation_set' => {
+            'name_servers' => [
+                'ns-001.awsdns-01.net',
+                'ns-002.awsdns-02.net',
+                'ns-003.awsdns-03.net',
+                'ns-004.awsdns-04.net'
+            ]
+        },
+    };
+
+=cut
+
 sub create_hosted_zone {
-    return WebService::Amazon::Route53::API::20110505::create_hosted_zone(@_);
+    my ($self, %args) = @_;
+    
+    if (!defined $args{'name'}) {
+        carp "Required parameter 'name' is not defined";
+    }
+    
+    if (!defined $args{'caller_reference'}) {
+        carp "Required parameter 'caller_reference' is not defined";
+    }
+    
+    # Make sure the domain name ends with a dot
+    if ($args{'name'} !~ /\.$/) {
+        $args{'name'} .= '.';
+    }
+    
+    my $data = _ordered_hash(
+        'xmlns' => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
+        'Name' => [ $args{'name'} ],
+        'CallerReference' => [ $args{'caller_reference'} ],
+        'HostedZoneConfig' => $args{'comment'} ? {
+            'Comment' => [ $args{'comment'} ]
+        } : undef,
+    );
+    
+    my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'CreateHostedZoneRequest');
+    
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    
+    my $response = $self->_request('POST', $self->{api_url} . 'hostedzone',
+        { content => $xml });
+        
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+    
+    $data = $self->{xs}->XMLin($response->{content},
+        ForceArray => [ 'NameServer' ]);
+    
+    my $ret = {
+        hosted_zone => {
+            id => $data->{HostedZone}{Id},
+            name => $data->{HostedZone}{Name},
+            caller_reference => $data->{HostedZone}{CallerReference},
+            resource_record_set_count =>
+                $data->{HostedZone}{ResourceRecordSetCount},
+        },
+        change_info => {
+            id => $data->{ChangeInfo}{Id},
+            status => $data->{ChangeInfo}{Status},
+            submitted_at => $data->{ChangeInfo}{SubmittedAt},
+        },
+        delegation_set => {
+            name_servers => $data->{DelegationSet}{NameServers}{NameServer},
+        }
+    };
+    
+    if (exists $data->{HostedZone}{Config}) {
+        $ret->{hosted_zone}{config} = {};
+        
+        if (exists $data->{HostedZone}{Config}{Comment}) {
+            $ret->{hosted_zone}{config}{comment} =
+                $data->{HostedZone}{Config}{Comment};
+        }
+    }
+    
+    return $ret;
 }
 
 sub delete_hosted_zone {
