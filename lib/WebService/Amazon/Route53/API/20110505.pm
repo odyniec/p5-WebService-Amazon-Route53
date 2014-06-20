@@ -808,27 +808,4 @@ sub change_resource_record_sets {
     return $change_info;
 }
 
-=head2 error
-
-Returns the last error.
-
-    $error = $r53->error;
-    
-Returns: A reference to a hash containing the type, code, and message of the
-last error. Example:
-
-    $error = {
-        'type' => 'Sender',
-        'message' => 'FATAL problem: UnsupportedCharacter encountered at  ',
-        'code' => 'InvalidDomainName'
-    };
-
-=cut
-
-sub error {
-    my ($self) = @_;
-    
-    return $self->{error};
-}
-
 1;
