@@ -25,14 +25,7 @@ sub new {
 
 Gets a list of hosted zones.
 
-Called in scalar context:
-
-    $zones = $r53->list_hosted_zones(max_items => 15);
-
-Called in list context:
-
-    ($zones, $next_marker) = $r53->list_hosted_zones(marker => '456ZONEID',
-                                                     max_items => 15);
+    $response = $r53->list_hosted_zones(max_items => 15);
     
 Parameters:
 
@@ -49,28 +42,31 @@ The maximum number of hosted zones to retrieve.
 
 =back
 
-Returns: A reference to an array of hash references, containing zone data.
-Example:
+Returns: A reference to a hash containing zone data, and a next marker if more
+zones are available. Example:
 
-    $zones = [
-        {
-            'id' => '/hostedzone/123ZONEID',
-            'name' => 'example.com.',
-            'caller_reference' => 'ExampleZone',
-            'config' => {
-                'comment' => 'This is my first hosted zone'
+    $response = {
+        hosted_zones => [
+            {
+                'id' => '/hostedzone/123ZONEID',
+                'name' => 'example.com.',
+                'caller_reference' => 'ExampleZone',
+                'config' => {
+                    'comment' => 'This is my first hosted zone'
+                },
+                'resource_record_set_count' => '10'
             },
-            'resource_record_set_count' => '10'
-        },
-        {
-            'id' => '/hostedzone/456ZONEID',
-            'name' => 'example2.com.',
-            'caller_reference' => 'ExampleZone2',
-            'config' => {
-                'comment' => 'This is my second hosted zone'
-            },
-            'resource_record_set_count' => '7'
-        }
+            {
+                'id' => '/hostedzone/456ZONEID',
+                'name' => 'example2.com.',
+                'caller_reference' => 'ExampleZone2',
+                'config' => {
+                    'comment' => 'This is my second hosted zone'
+                },
+                'resource_record_set_count' => '7'
+            }
+        ],
+        next_marker => '456ZONEID'
     ];
     
 When called in list context, it also returns the next marker to pass to a
@@ -107,19 +103,19 @@ sub list_hosted_zones {
     my $zones = [];
     my $next_marker;
     
-    foreach my $zone_data (@{$data->{HostedZones}->{HostedZone}}) {
+    foreach my $zone_data (@{$data->{HostedZones}{HostedZone}}) {
         my $zone = {
-            'id' => $zone_data->{Id},
-            'name' => $zone_data->{Name},
-            'caller_reference' => $zone_data->{CallerReference},
-            'resource_record_set_count' => $zone_data->{ResourceRecordSetCount},
+            id                          => $zone_data->{Id},
+            name                        => $zone_data->{Name},
+            caller_reference            => $zone_data->{CallerReference},
+            resource_record_set_count   => $zone_data->{ResourceRecordSetCount},
         };
         
         if (exists $zone_data->{Config}) {
             $zone->{config} = {};
             
-            if (exists $zone_data->{Config}->{Comment}) {
-                $zone->{config}->{comment} = $zone_data->{Config}->{Comment};
+            if (exists $zone_data->{Config}{Comment}) {
+                $zone->{config}{comment} = $zone_data->{Config}{Comment};
             }
         }
         
@@ -130,7 +126,10 @@ sub list_hosted_zones {
         $next_marker = $data->{NextMarker};
     }
     
-    return wantarray ? ($zones, $next_marker) : $zones;
+    return {
+        hosted_zones => $zones,
+        (next_marker => $next_marker) x defined $next_marker
+    };
 }
 
 sub get_hosted_zone {
