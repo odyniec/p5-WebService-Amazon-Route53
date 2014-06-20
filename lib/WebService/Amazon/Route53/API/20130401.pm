@@ -3,6 +3,8 @@ package WebService::Amazon::Route53::API::20130401;
 use warnings;
 use strict;
 
+use URI::Escape;
+
 use WebService::Amazon::Route53::API;
 use parent 'WebService::Amazon::Route53::API';
 
