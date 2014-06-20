@@ -47,8 +47,4 @@ sub change_resource_record_sets {
     return WebService::Amazon::Route53::API::20110505::change_resource_record_sets(@_);
 }
 
-sub error {
-    return WebService::Amazon::Route53::API::20110505::error(@_);
-}
-
 1;
