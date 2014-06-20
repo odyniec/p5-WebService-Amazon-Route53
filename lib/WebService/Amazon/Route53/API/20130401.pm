@@ -222,8 +222,74 @@ sub get_hosted_zone {
     };
 }
 
+=head2 find_hosted_zone
+
+Finds the first hosted zone with the given name.
+
+    $response = $r53->find_hosted_zone(name => 'example.com.');
+    
+Parameters:
+
+=over 4
+
+=item * name
+
+B<(Required)> Hosted zone name.
+
+=back
+
+Returns: A reference to a hash containing zone data and name servers information
+(see L<"get_hosted_zone">), or C<undef> if there is no hosted zone with the
+given name.
+
+=cut
+
 sub find_hosted_zone {
-    return WebService::Amazon::Route53::API::20110505::find_hosted_zone(@_);
+    my ($self, %args) = @_;
+    
+    if (!defined $args{'name'}) {
+        carp "Required parameter 'name' is not defined";
+    }
+    
+    if ($args{'name'} !~ /\.$/) {
+        $args{'name'} .= '.';
+    }
+    
+    my $found_zone;
+    my $marker;
+    
+    ZONES: while (1) {
+        my $response = $self->list_hosted_zones(max_items => 100,
+            marker => $marker);
+            
+        if (!defined $response) {
+            # We can assume $self->{error} is already set
+            return undef;
+        }
+        
+        my $zones = $response->{hosted_zones};
+        my $zone;
+        
+        foreach $zone (@$zones) {
+            if ($zone->{name} eq $args{'name'}) {
+                $found_zone = $zone;
+                last ZONES;
+            }
+        }
+        
+        if (@$zones < 100) {
+            # Less than 100 zones have been returned -- no more zones to get
+            last ZONES;
+        }
+        else {
+            # Get the marker from the last returned zone
+            ($marker = $zones->[@$zones-1]->{'id'}) =~ s!^/hostedzone/!!;
+        }
+    }
+
+    if ($found_zone) {
+        return $self->get_hosted_zone(zone_id => $found_zone->{id});
+    }
 }
 
 =head2 create_hosted_zone
