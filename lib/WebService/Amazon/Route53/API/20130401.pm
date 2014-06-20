@@ -412,8 +412,61 @@ sub create_hosted_zone {
     return $ret;
 }
 
+=head2 delete_hosted_zone
+
+Deletes a hosted zone.
+
+    $change_info = $r53->delete_hosted_zone(zone_id => '123ZONEID');
+    
+Parameters:
+
+=over 4
+
+=item * zone_id
+
+B<(Required)> Hosted zone ID.
+
+=back
+
+Returns: A reference to a hash containing change information. Example:
+
+    $change_info = {
+        'id' => '/change/123CHANGEID'
+        'submitted_at' => '2011-08-31T00:04:37.456Z',
+        'status' => 'PENDING'
+    };
+
+=cut
+
 sub delete_hosted_zone {
-    return WebService::Amazon::Route53::API::20110505::delete_hosted_zone(@_);
+    my ($self, %args) = @_;
+    
+    if (!defined $args{'zone_id'}) {
+        carp "Required parameter 'zone_id' is not defined";
+    }
+    
+    my $zone_id = $args{'zone_id'};
+    
+    # Strip off the "/hostedzone/" part, if present
+    $zone_id =~ s!^/hostedzone/!!;
+
+    my $response = $self->_request('DELETE',
+        $self->{api_url} . 'hostedzone/' . $zone_id);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+    
+    my $data = $self->{xs}->XMLin($response->{content});
+        
+    my $change_info = {
+        id => $data->{ChangeInfo}{Id},
+        status => $data->{ChangeInfo}{Status},
+        submitted_at => $data->{ChangeInfo}{SubmittedAt}
+    };
+    
+    return $change_info;
 }
 
 sub list_resource_record_sets {
