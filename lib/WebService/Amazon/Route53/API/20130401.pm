@@ -132,8 +132,93 @@ sub list_hosted_zones {
     };
 }
 
+=head2 get_hosted_zone
+
+Gets hosted zone data.
+
+    $response = get_hosted_zone(zone_id => '123ZONEID');
+    
+Parameters:
+
+=over 4
+
+=item * zone_id
+
+B<(Required)> Hosted zone ID.
+
+=back
+
+Returns: A reference to a hash containing zone data and name servers
+information. Example:
+
+    $response = {
+        'hosted_zone' => {
+            'id' => '/hostedzone/123ZONEID'
+            'name' => 'example.com.',
+            'caller_reference' => 'ExampleZone',
+            'config' => {
+                'comment' => 'This is my first hosted zone'
+            },
+            'resource_record_set_count' => '10'
+        },
+        'delegation_set' => {
+            'name_servers' => [
+                'ns-001.awsdns-01.net',
+                'ns-002.awsdns-02.net',
+                'ns-003.awsdns-03.net',
+                'ns-004.awsdns-04.net'
+            ]
+        }
+    };
+
+=cut
+
 sub get_hosted_zone {
-    return WebService::Amazon::Route53::API::20110505::get_hosted_zone(@_);
+    my ($self, %args) = @_;
+    
+    if (!defined $args{'zone_id'}) {
+        carp "Required parameter 'zone_id' is not defined";
+    }
+    
+    my $zone_id = $args{'zone_id'};
+    
+    # Strip off the "/hostedzone/" part, if present
+    $zone_id =~ s!^/hostedzone/!!;
+
+    my $url = $self->{api_url} . 'hostedzone/' . $zone_id;
+    
+    my $response = $self->_request('GET', $url);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+    
+    my $data = $self->{'xs'}->XMLin($response->{content},
+        ForceArray => [ 'NameServer' ]);
+    
+    my $zone = {
+        id => $data->{HostedZone}{Id},
+        name => $data->{HostedZone}{Name},
+        caller_reference => $data->{HostedZone}{CallerReference},
+        resource_record_set_count => $data->{HostedZone}{ResourceRecordSetCount}
+    };
+    
+    if (exists $data->{HostedZone}->{Config}) {
+        $zone->{config} = {};
+        
+        if (exists $data->{HostedZone}{Config}{Comment}) {
+            $zone->{config}{comment} =
+                $data->{HostedZone}{Config}{Comment};
+        }
+    }
+    
+    return {
+        hosted_zone => $zone,
+        delegation_set => {
+            name_servers => $data->{DelegationSet}{NameServers}{NameServer}
+        }
+    };
 }
 
 sub find_hosted_zone {
