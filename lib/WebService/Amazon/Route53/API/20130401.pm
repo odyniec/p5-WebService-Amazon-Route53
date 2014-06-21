@@ -70,10 +70,6 @@ zones are available. Example:
         'next_marker' => '456ZONEID'
     ];
     
-When called in list context, it also returns the next marker to pass to a
-subsequent call to C<list_hosted_zones> to get the next set of results. If this
-is the last set of results, next marker will be C<undef>.
-
 =cut
 
 sub list_hosted_zones {
