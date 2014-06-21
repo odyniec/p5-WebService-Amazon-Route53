@@ -9,8 +9,6 @@ use URI::Escape;
 use WebService::Amazon::Route53::API;
 use parent 'WebService::Amazon::Route53::API';
 
-use WebService::Amazon::Route53::API::20110505;
-
 sub new {
     my ($class, %args) = @_;
 
