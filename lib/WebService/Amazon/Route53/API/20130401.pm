@@ -465,8 +465,198 @@ sub delete_hosted_zone {
     return $change_info;
 }
 
+=head2 list_resource_record_sets
+
+Lists resource record sets for a hosted zone.
+
+    $response = $r53->list_resource_record_sets(zone_id => '123ZONEID');
+    
+Parameters:
+
+=over 4
+
+=item * zone_id
+
+B<(Required)> Hosted zone ID.
+
+=item * name
+
+The first domain name (in lexicographic order) to retrieve.
+
+=item * type
+
+DNS record type of the next resource record set to retrieve.
+
+=item * identifier
+
+Set identifier for the next source record set to retrieve. This is needed when
+the previous set of results has been truncated for a given DNS name and type.
+
+=item * max_items
+
+The maximum number of records to be retrieved. The default is 100, and it's the
+maximum allowed value.
+
+=back
+
+Returns: A hash reference containing record set data, and optionally (if more
+records are available) the name, type, and set identifier of the next record to
+retrieve. Example:
+
+    $response = {
+        resource_record_sets = [
+            {
+                name => 'example.com.',
+                type => 'MX'
+                ttl => 86400,
+                resource_records => [
+                    '10 mail.example.com'
+                ]
+            },
+            {
+                name => 'example.com.',
+                type => 'NS',
+                ttl => 172800,
+                resource_records => [
+                    'ns-001.awsdns-01.net.',
+                    'ns-002.awsdns-02.net.',
+                    'ns-003.awsdns-03.net.',
+                    'ns-004.awsdns-04.net.'
+                ]
+            }
+        ],
+        next_record_name => 'example.com.',
+        next_record_type => 'A',
+        next_record_identifier => '1'
+    };
+
+=cut
+
 sub list_resource_record_sets {
-    return WebService::Amazon::Route53::API::20110505::list_resource_record_sets(@_);
+    my ($self, %args) = @_;
+    
+    if (!defined $args{'zone_id'}) {
+        carp "Required parameter 'zone_id' is not defined";
+    }
+    
+    my $zone_id = $args{'zone_id'};
+
+    # Strip off the "/hostedzone/" part, if present
+    $zone_id =~ s!^/hostedzone/!!;
+
+    my $url = $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset';
+    my $separator = '?';
+    
+    if (defined $args{'name'}) {
+        $url .= $separator . 'name=' . uri_escape($args{'name'});
+        $separator = '&';
+    }
+    
+    if (defined $args{'type'}) {
+        $url .= $separator . 'type=' . uri_escape($args{'type'});
+        $separator = '&';
+    }
+    
+    if (defined $args{'identifier'}) {
+        $url .= $separator . 'identifier=' . uri_escape($args{'identifier'});
+        $separator = '&';
+    }
+
+    if (defined $args{'max_items'}) {
+        $url .= $separator . 'maxitems=' . uri_escape($args{'max_items'});
+    }
+    
+    my $response = $self->_request('GET', $url);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+    
+    my $data = $self->{'xs'}->XMLin($response->{content},
+        ForceArray => [ 'ResourceRecordSet', 'ResourceRecord' ]);
+    
+    my $record_sets = [];
+    my $next_record;
+    
+    foreach my $set_data (@{$data->{ResourceRecordSets}{ResourceRecordSet}}) {
+        my $record_set = {
+            name => $set_data->{Name},
+            type => $set_data->{Type},
+        };
+
+        # Basic syntax
+        
+        if (exists $set_data->{TTL}) {
+            $record_set->{ttl} = $set_data->{TTL};
+        }
+
+        if (exists $set_data->{ResourceRecords}) {
+            my $records = [];
+
+            foreach my $record (@{$set_data->{ResourceRecords}{ResourceRecord}}) {
+                push(@$records, $record->{Value});
+            }
+
+            $record_set->{resource_records} = $records;
+        }
+
+        if (exists $set_data->{HealthCheckId}) {        
+            $record_set->{health_check_id} = $set_data->{HealthCheckId};
+        }
+
+        # Weighted resource record sets
+
+        if (exists $set_data->{SetIdentifier}) {
+            $record_set->{set_identifier} = $set_data->{SetIdentifier};
+        }
+        
+        if (exists $set_data->{Weight}) {
+            $record_set->{weight} = $set_data->{Weight};
+        }
+
+        # Alias resource record sets
+
+        if (exists $set_data->{AliasTarget}) {
+            $record_set->{alias_target} = {
+                hosted_zone_id => $set_data->{AliasTarget}{HostedZoneId},
+                dns_name => $set_data->{AliasTarget}{DNSName},
+                evaluate_target_health =>
+                    $set_data->{AliasTarget}{EvaluateTargetHealth} eq 'true' ?
+                    1 : 0
+            };
+        }
+
+        # Latency resource record sets
+
+        if (exists $set_data->{Region}) {
+            $record_set->{region} = $set_data->{Region};
+        }
+
+        # Failover resource record sets
+
+        if (exists $set_data->{Failover}) {
+            $record_set->{failover} = $set_data->{Failover};
+        }
+        
+        push(@$record_sets, $record_set); 
+    }
+
+    my $ret = { resource_record_sets => $record_sets };
+    
+    if (exists $data->{NextRecordName}) {
+        $ret->{next_record_name} = $data->{NextRecordName};
+    }
+
+    if (exists $data->{NextRecordType}) {
+        $ret->{next_record_type} = $data->{NextRecordType};
+    }
+
+    if (exists $data->{NextRecordIdentifier}) {
+        $ret->{next_record_identifier} = $data->{NextRecordIdentifier};
+    }
+    
+    return $ret;
 }
 
 sub change_resource_record_sets {
