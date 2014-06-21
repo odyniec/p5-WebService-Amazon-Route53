@@ -945,4 +945,14 @@ sub change_resource_record_sets {
     return $change_info;
 }
 
+# TODO: get_change
+
+# TODO: create_health_check
+
+# TODO: get_health_check
+
+# TODO: list_health_checks
+
+# TODO: delete_health_check
+
 1;
