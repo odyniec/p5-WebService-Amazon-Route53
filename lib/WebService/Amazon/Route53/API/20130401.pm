@@ -659,8 +659,290 @@ sub list_resource_record_sets {
     return $ret;
 }
 
+=head2 change_resource_record_sets
+
+Makes changes to DNS record sets.
+
+    $change_info = $r53->change_resource_record_sets(zone_id => '123ZONEID',
+            changes => [
+                # Delete the current A record
+                {
+                    action => 'delete',
+                    name => 'www.example.com.',
+                    type => 'A',
+                    ttl => 86400,
+                    value => '12.34.56.78'
+                },
+                # Create a new A record with a different value
+                {
+                    action => 'create',
+                    name => 'www.example.com.',
+                    type => 'A',
+                    ttl => 86400,
+                    value => '34.56.78.90'
+                },
+                # Create two new MX records
+                {
+                    action => 'create',
+                    name => 'example.com.',
+                    type => 'MX',
+                    ttl => 86400,
+                    records => [
+                        '10 mail.example.com',
+                        '20 mail2.example.com'
+                    ]
+                }
+            ]);
+        
+If there is just one change to be made, you can use the simplified call syntax,
+and pass the change parameters directly, instead of using the C<changes>
+parameter: 
+
+    $change_info = $r53->change_resource_record_sets(zone_id => '123ZONEID',
+                                                     action => 'delete',
+                                                     name => 'www.example.com.',
+                                                     type => 'A',
+                                                     ttl => 86400,
+                                                     value => '12.34.56.78');
+
+Parameters:
+
+=over 4
+
+=item * zone_id
+
+B<(Required)> Hosted zone ID.
+
+=item * changes
+
+B<(Required)> A reference to an array of hashes, describing the changes to be
+made. If there is just one change, the array may be omitted and change
+parameters may be passed directly.
+
+=back
+
+Change parameters:
+
+=over 4
+
+=item * action
+
+B<(Required)> The action to perform (C<"create">, C<"delete">, or C<"upsert">).
+
+=item * name
+
+B<(Required)> The name of the domain to perform the action on.
+
+=item * type
+
+B<(Required)> The DNS record type.
+
+=item * ttl
+
+The DNS record time to live (TTL), in seconds.
+
+=item * records
+
+A reference to an array of strings that represent the current or new record
+values. If there is just one value, you can use the C<value> parameter instead.
+
+=item * value
+
+Current or new DNS record value. For multiple record values, use the C<records>
+parameter.
+
+=item * health_check_id
+
+ID of a Route53 health check.
+
+=item * set_identifier
+
+Unique description for this resource record set.
+
+=item * weight
+
+Weight of this resource record set (in the range 0 - 255).
+
+=item * alias_target
+
+Information about the CloudFront distribution, Elastic Load Balancing load
+balancer, Amazon S3 bucket, or resource record set to which queries are being
+redirected. A hash reference with the following fields:
+
+=over
+
+=item * hosted_zone_id
+
+Hosted zone ID for the CloudFront distribution, Amazon S3 bucket, Elastic Load
+Balancing load balancer, or Amazon Route 53 hosted zone.
+
+=item * dns_name
+
+DNS domain name for the CloudFront distribution, Amazon S3 bucket, Elastic Load
+Balancing load balancer, or another resource record set in this hosted zone.
+
+=item * evaluate_target_health
+
+TODO: document (C<0> or C<1>).
+
+=back
+
+=item * region
+
+Amazon EC2 region name.
+
+=item * failover
+
+TODO: document (C<"PRIMARY"> or C<"SECONDARY">).
+
+=back
+
+Returns: A reference to a hash containing change information. Example:
+
+    $change_info = {
+        'id' => '/change/123CHANGEID'
+        'submitted_at' => '2011-08-31T00:04:37.456Z',
+        'status' => 'PENDING'
+    };
+
+=cut
+
 sub change_resource_record_sets {
-    return WebService::Amazon::Route53::API::20110505::change_resource_record_sets(@_);
+    my ($self, %args) = @_;
+    
+    if (!defined $args{'zone_id'}) {
+        carp "Required parameter 'zone_id' is not defined";
+    }
+    
+    if (!defined($args{changes}) && !(defined($args{action}) &&
+        defined($args{name}) && defined($args{type}) && 
+            (defined($args{records}) || defined($args{value}))))
+    {
+        carp "Either the 'changes', or the 'action', 'name', 'type', " .
+            "and 'records'/'value' paremeters must be defined";
+    }
+    
+    my $zone_id = $args{'zone_id'};
+    
+    # Strip off the "/hostedzone/" part, if present
+    $zone_id =~ s!^/hostedzone/!!;
+    
+    my $changes;
+    
+    if (defined $args{'changes'}) {
+        $changes = $args{'changes'};
+    }
+    else {
+        # Simplified syntax for single changes
+        delete $args{'zone_id'};
+        $changes = [ \%args ];
+    }
+
+    my $data = _ordered_hash(
+        'xmlns' => $self->{base_url} . 'doc/' . $self->{api_version} . '/',
+        'ChangeBatch' => {
+            'Comment' => defined $args{'comment'} ? [
+                $args{'comment'}
+            ] : undef,
+            'Changes' => [
+                {
+                    'Change' => []
+                }
+            ]
+        }
+    );
+    
+    foreach my $change (@$changes) {
+        my $change_data = _ordered_hash(
+            'Action' => [ uc $change->{action} ],
+            'ResourceRecordSet' => _ordered_hash(
+                'Name' => [ $change->{name} ],
+                'Type' => [ $change->{type} ],
+            )
+        );
+
+        # Basic syntax
+
+        if (exists $change->{ttl}) {
+            $change_data->{TTL} = $change->{ttl};
+        }
+
+        if (exists $change->{value}) {
+            $change->{records} = [ delete $change->{value} ];
+        }
+        
+        if (exists $change->{records}) {
+            $change_data->{ResourceRecords} = [ { ResourceRecord => [] } ];
+            foreach my $value (@{$change->{records}}) {
+                push(@{$change_data->{ResourceRecordSet}{ResourceRecords}[0]
+                    {ResourceRecord}}, { 'Value' => [ $value ] });
+            }
+        }
+
+        if (exists $change->{health_check_id}) {
+            $change_data->{HealthCheckId} = $change->{health_check_id};
+        }
+
+        # Weighted resource record sets
+
+        if (exists $change->{set_identifier}) {
+            $change_data->{SetIdentifier} = $change->{set_identifier};
+        }
+
+        if (exists $change->{weight}) {
+            $change_data->{Weight} = $change->{weight};
+        }
+
+        # Alias resource record sets
+
+        if (exists $change->{alias_target}) {
+            $change_data->{AliasTarget} = _ordered_hash(
+                HostedZoneId        => $change->{alias_target}{hosted_zone_id},
+                DNSName             => $change->{alias_target}{dns_name},
+                EvaluateTargetHealth =>
+                    $change->{alias_target}{evaluate_target_health} ?
+                        'true' : 'false',
+            );
+        }
+
+        # Latency resource record sets
+
+        if (exists $change->{region}) {
+            $change_data->{Region} = $change->{region};
+        }
+
+        # Failover resource record sets
+
+        if (exists $change->{failover}) {
+            $change_data->{Failover} = $change->{failover};
+        }
+        
+        push(@{$data->{ChangeBatch}{Changes}[0]{Change}}, $change_data);
+    }
+    
+    my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'ChangeResourceRecordSetsRequest');
+        
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+        
+    my $response = $self->_request('POST', 
+        $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', 
+        { content => $xml });
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+
+    $data = $self->{xs}->XMLin($response->{content});
+        
+    my $change_info = {
+        id => $data->{ChangeInfo}{Id},
+        status => $data->{ChangeInfo}{Status},
+        submitted_at => $data->{ChangeInfo}{SubmittedAt}
+    };
+    
+    return $change_info;
 }
 
 1;
