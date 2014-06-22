@@ -859,10 +859,12 @@ sub change_resource_record_sets {
             )
         );
 
+        my $change_rrset = $change_data->{ResourceRecordSet};
+
         # Basic syntax
 
         if (exists $change->{ttl}) {
-            $change_data->{TTL} = $change->{ttl};
+            $change_rrset->{TTL} = [ $change->{ttl} ];
         }
 
         if (exists $change->{value}) {
@@ -870,54 +872,55 @@ sub change_resource_record_sets {
         }
         
         if (exists $change->{records}) {
-            $change_data->{ResourceRecords} = [ { ResourceRecord => [] } ];
+            $change_rrset->{ResourceRecords} = [ { ResourceRecord => [] } ];
             foreach my $value (@{$change->{records}}) {
-                push(@{$change_data->{ResourceRecordSet}{ResourceRecords}[0]
+                push(@{$change_rrset->{ResourceRecords}[0]
                     {ResourceRecord}}, { 'Value' => [ $value ] });
             }
         }
 
         if (exists $change->{health_check_id}) {
-            $change_data->{HealthCheckId} = $change->{health_check_id};
+            $change_rrset->{HealthCheckId} = [ $change->{health_check_id} ];
         }
 
         # Weighted resource record sets
 
         if (exists $change->{set_identifier}) {
-            $change_data->{SetIdentifier} = $change->{set_identifier};
+            $change_rrset->{SetIdentifier} = [ $change->{set_identifier} ];
         }
 
         if (exists $change->{weight}) {
-            $change_data->{Weight} = $change->{weight};
+            $change_rrset->{Weight} = [ $change->{weight} ];
         }
 
         # Alias resource record sets
 
         if (exists $change->{alias_target}) {
-            $change_data->{AliasTarget} = _ordered_hash(
-                HostedZoneId        => $change->{alias_target}{hosted_zone_id},
-                DNSName             => $change->{alias_target}{dns_name},
-                EvaluateTargetHealth =>
+            $change_rrset->{AliasTarget} = _ordered_hash(
+                HostedZoneId    => [ $change->{alias_target}{hosted_zone_id} ],
+                DNSName         => [ $change->{alias_target}{dns_name} ],
+                EvaluateTargetHealth => [
                     $change->{alias_target}{evaluate_target_health} ?
-                        'true' : 'false',
+                        'true' : 'false'
+                ],
             );
         }
 
         # Latency resource record sets
 
         if (exists $change->{region}) {
-            $change_data->{Region} = $change->{region};
+            $change_rrset->{Region} = [ $change->{region} ];
         }
 
         # Failover resource record sets
 
         if (exists $change->{failover}) {
-            $change_data->{Failover} = $change->{failover};
+            $change_rrset->{Failover} = [ $change->{failover} ];
         }
         
         push(@{$data->{ChangeBatch}{Changes}[0]{Change}}, $change_data);
     }
-    
+
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'ChangeResourceRecordSetsRequest');
         
