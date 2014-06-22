@@ -946,7 +946,62 @@ sub change_resource_record_sets {
     return $change_info;
 }
 
-# TODO: get_change
+=head2 get_change
+
+Gets current status of a change batch request.
+
+    $change_info = $r53->get_change(change_id => '123FOO456');
+
+Parameters:
+
+=over 4
+
+=item * change_id
+
+B<(Required)> The ID of the change batch request.
+
+=back
+
+Returns: A reference to a hash containing change information. Example:
+
+    $change_info = {
+        'id' => '/change/123FOO456'
+        'submitted_at' => '2011-08-31T00:04:37.456Z',
+        'status' => 'PENDING'
+    };
+
+=cut
+
+sub get_change {
+    my ($self, %args) = @_;
+    
+    if (!defined $args{change_id}) {
+        carp "Required parameter 'change_id' is not defined";
+    }
+    
+    my $change_id = $args{change_id};
+    
+    # Strip off the "/change/" part, if present
+    $change_id =~ s!^/change/!!;
+    
+    my $response = $self->_request('GET',
+        $self->{api_url} . 'change/' . $change_id);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+
+    my $data = $self->{xs}->XMLin($response->{content});
+        
+    my $change_info = {
+        id => $data->{ChangeInfo}{Id},
+        status => $data->{ChangeInfo}{Status},
+        submitted_at => $data->{ChangeInfo}{SubmittedAt}
+    };
+    
+    return $change_info;
+}
 
 # TODO: create_health_check
 
