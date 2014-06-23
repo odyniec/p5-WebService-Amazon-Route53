@@ -89,7 +89,7 @@ sub list_hosted_zones {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     # Parse the returned XML data
@@ -186,7 +186,7 @@ sub get_hosted_zone {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     my $data = $self->{'xs'}->XMLin($response->{content},
@@ -258,7 +258,7 @@ sub find_hosted_zone {
             
         if (!defined $response) {
             # We can assume $self->{error} is already set
-            return undef;
+            return;
         }
         
         my $zones = $response->{hosted_zones};
@@ -370,7 +370,7 @@ sub create_hosted_zone {
         
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     $data = $self->{xs}->XMLin($response->{content},
@@ -449,7 +449,7 @@ sub delete_hosted_zone {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     my $data = $self->{xs}->XMLin($response->{content});
@@ -568,7 +568,7 @@ sub list_resource_record_sets {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     my $data = $self->{'xs'}->XMLin($response->{content},
@@ -932,7 +932,7 @@ sub change_resource_record_sets {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
 
     $data = $self->{xs}->XMLin($response->{content});
@@ -989,7 +989,7 @@ sub get_change {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
 
     my $data = $self->{xs}->XMLin($response->{content});
@@ -1144,7 +1144,7 @@ sub create_health_check {
         
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     $data = $self->{xs}->XMLin($response->{content});
@@ -1238,7 +1238,7 @@ sub delete_health_check {
     
     if (!$response->{success}) {
         $self->_parse_error($response->{content});
-        return undef;
+        return;
     }
     
     return 1;
