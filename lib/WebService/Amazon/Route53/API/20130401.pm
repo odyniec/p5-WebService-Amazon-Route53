@@ -1203,6 +1203,45 @@ sub create_health_check {
 
 # TODO: list_health_checks
 
-# TODO: delete_health_check
+=head2 delete_health_check
+
+Deletes a health check.
+
+    $result = $r53->delete_health_check(
+        health_check_id => '01ab23cd-45ef-67ab-89cd-01ab23cd45ef');
+    
+Parameters:
+
+=over 4
+
+=item * health_check_id
+
+B<(Required)> The ID of the health check to be deleted.
+
+=back
+
+Returns: C<1> if the health check was successfully deleted, C<undef> otherwise.
+
+=cut
+
+sub delete_health_check {
+    my ($self, %args) = @_;
+    
+    if (!defined $args{health_check_id}) {
+        carp "Required parameter 'health_check_id' is not defined";
+    }
+    
+    my $health_check_id = $args{health_check_id};
+    
+    my $response = $self->_request('DELETE',
+        $self->{api_url} . 'healthcheck/' . $health_check_id);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+    
+    return 1;
+}
 
 1;
