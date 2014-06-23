@@ -502,7 +502,7 @@ records are available) the name, type, and set identifier of the next record to
 retrieve. Example:
 
     $response = {
-        resource_record_sets = [
+        resource_record_sets => [
             {
                 name => 'example.com.',
                 type => 'MX'
