@@ -1003,7 +1003,201 @@ sub get_change {
     return $change_info;
 }
 
-# TODO: create_health_check
+=head2 create_health_check
+
+Creates a new health check.
+
+    $response = $r53->create_health_check(
+        caller_reference => 'check_01',
+        type => 'http',
+        fully_qualified_domain_name => 'example.com',
+        request_interval => 10
+    );
+
+Parameters:
+
+=over 4
+
+=item * caller_reference
+
+B<(Required)> A unique string that identifies the request.
+
+=item * type
+
+B<(Required)> The type of health check to be created (C<"http">, C<"https">,
+C<"http_str_match">, C<"https_str_match">, or C<"tcp">).
+
+=item * ip_address
+
+The IPv4 address of the endpoint on which to perform health checks.
+
+=item * port
+
+The port on the endpoint on which to perform health checks. Required when the
+type is C<tcp>, optional for other types (if omitted, the default value of C<80>
+is used).
+
+=item * resource_path
+
+The path to request when performing health checks (applies to all types except
+C<tcp>).
+
+=item * fully_qualified_domain_name
+
+Fully qualified domain name to be used in checks (applies to all types except
+C<tcp>).
+
+=item * search_string
+
+The string to search for in the response body from the specified resource
+(applies to C<http_str_match> and C<https_str_match>).
+
+=item * request_interval
+
+The number of seconds between the time when a response is received and the time
+when the next health check request is sent (C<10> or C<30>, default: C<30>).
+
+=item * failure_threshold
+
+The number of consecutive health checks that an endpoint must pass or fail to
+change the crrent status of the endpoint from unhealthy to healthy or vice
+versa (a value between C<1> and C<10>, default: C<3>).
+
+=back
+
+Returns: A reference to a hash containing new zone data, change description,
+and name servers information. Example:
+
+    $response = {
+        'health_check' => {
+            'id' => '01ab23cd-45ef-67ab-89cd-01ab23cd45ef',
+            'caller_reference' => 'check_01',
+            'health_check_config' => {
+                'type' => 'http',
+                'fully_qualified_domain_name' => 'example.com',
+                'request_interval' => '10',
+                'failure_threshold' => '3',
+                'port' => '80'
+            }
+        }
+    };
+
+=cut
+
+sub create_health_check {
+    my ($self, %args) = @_;
+    
+    if (!defined $args{caller_reference}) {
+        carp "Required parameter 'caller_reference' is not defined";
+    }
+    
+    if (!defined $args{type}) {
+        carp "Required parameter 'type' is not defined";
+    }
+    
+    my $data = _ordered_hash(
+        'xmlns' => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
+        'CallerReference' => [ $args{caller_reference} ],
+        'HealthCheckConfig' => _ordered_hash,
+    );
+
+    if (exists $args{ip_address}) {
+        $data->{HealthCheckConfig}{IPAddress} = [ $args{ip_address} ];
+    }
+
+    if (exists $args{port}) {
+        $data->{HealthCheckConfig}{Port} = [ $args{port} ];
+    }
+
+    $data->{HealthCheckConfig}{Type} = [ uc $args{type} ];
+
+    if (exists $args{resource_path}) {
+        $data->{HealthCheckConfig}{ResourcePath} = [ $args{resource_path} ];
+    }
+
+    if (exists $args{fully_qualified_domain_name}) {
+        $data->{HealthCheckConfig}{FullyQualifiedDomainName} =
+            [ $args{fully_qualified_domain_name} ];
+    }
+    
+    if (exists $args{search_string}) {
+        $data->{HealthCheckConfig}{SearchString} = [ $args{search_string} ];
+    }
+
+    if (exists $args{request_interval}) {
+        $data->{HealthCheckConfig}{RequestInterval} =
+            [ $args{request_interval} ];
+    }
+
+    if (exists $args{failure_threshold}) {
+        $data->{HealthCheckConfig}{FailureThreshold} =
+            [ $args{failure_threshold} ];
+    }
+
+    my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'CreateHealthCheckRequest');
+    
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+
+    my $response = $self->_request('POST', $self->{api_url} . 'healthcheck',
+        { content => $xml });
+        
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return undef;
+    }
+    
+    $data = $self->{xs}->XMLin($response->{content});
+
+    my $health_check = {
+        id => $data->{HealthCheck}{Id},
+        caller_reference => $data->{HealthCheck}{CallerReference},
+    };
+
+    my $health_check_config = {
+        type => lc $data->{HealthCheck}{HealthCheckConfig}{Type},
+    };
+
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{IPAddress}) {
+        $health_check_config->{ip_address} =
+            $data->{HealthCheck}{HealthCheckConfig}{IPAddress};
+    }
+
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{Port}) {
+        $health_check_config->{port} =
+            $data->{HealthCheck}{HealthCheckConfig}{Port};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{ResourcePath}) {
+        $health_check_config->{resource_path} =
+            $data->{HealthCheck}{HealthCheckConfig}{ResourcePath};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName}) {
+        $health_check_config->{fully_qualified_domain_name} =
+            $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{SearchString}) {
+        $health_check_config->{search_string} =
+            $data->{HealthCheck}{HealthCheckConfig}{SearchString};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{RequestInterval}) {
+        $health_check_config->{request_interval} =
+            $data->{HealthCheck}{HealthCheckConfig}{RequestInterval};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold}) {
+        $health_check_config->{failure_threshold} =
+            $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold};
+    }
+
+    $health_check->{health_check_config} = $health_check_config;
+    
+    return { health_check => $health_check };
+}
+
 
 # TODO: get_health_check
 
