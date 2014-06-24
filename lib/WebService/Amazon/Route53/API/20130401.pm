@@ -1065,8 +1065,7 @@ versa (a value between C<1> and C<10>, default: C<3>).
 
 =back
 
-Returns: A reference to a hash containing new zone data, change description,
-and name servers information. Example:
+Returns: A reference to a hash containing health check information. Example:
 
     $response = {
         'health_check' => {
