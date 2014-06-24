@@ -1197,8 +1197,108 @@ sub create_health_check {
     return { health_check => $health_check };
 }
 
+=head2 get_health_check
 
-# TODO: get_health_check
+Gets information about a specific health check.
+
+    $response = $r53->get_health_check(
+        health_check_id => '01ab23cd-45ef-67ab-89cd-01ab23cd45ef');
+
+Parameters:
+
+=over 4
+
+=item * health_check_id
+
+B<(Required)> The ID of the health check to be deleted.
+
+=back
+
+Returns: A reference to a hash containing health check information. Example:
+
+    $response = {
+        'health_check' => {
+            'id' => '01ab23cd-45ef-67ab-89cd-01ab23cd45ef',
+            'caller_reference' => 'check_01',
+            'health_check_config' => {
+                'type' => 'http',
+                'fully_qualified_domain_name' => 'example.com',
+                'request_interval' => '10',
+                'failure_threshold' => '3',
+                'port' => '80'
+            }
+        }
+    };
+
+=cut
+
+sub get_health_check {
+    my ($self, %args) = @_;
+    
+    if (!defined $args{health_check_id}) {
+        carp "Required parameter 'health_check_id' is not defined";
+    }
+    
+    my $health_check_id = $args{health_check_id};
+    
+    my $response = $self->_request('GET',
+        $self->{api_url} . 'healthcheck/' . $health_check_id);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return;
+    }
+    
+    my $data = $self->{xs}->XMLin($response->{content});
+
+    my $health_check = {
+        id => $data->{HealthCheck}{Id},
+        caller_reference => $data->{HealthCheck}{CallerReference},
+    };
+
+    my $health_check_config = {
+        type => lc $data->{HealthCheck}{HealthCheckConfig}{Type},
+    };
+
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{IPAddress}) {
+        $health_check_config->{ip_address} =
+            $data->{HealthCheck}{HealthCheckConfig}{IPAddress};
+    }
+
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{Port}) {
+        $health_check_config->{port} =
+            $data->{HealthCheck}{HealthCheckConfig}{Port};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{ResourcePath}) {
+        $health_check_config->{resource_path} =
+            $data->{HealthCheck}{HealthCheckConfig}{ResourcePath};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName}) {
+        $health_check_config->{fully_qualified_domain_name} =
+            $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{SearchString}) {
+        $health_check_config->{search_string} =
+            $data->{HealthCheck}{HealthCheckConfig}{SearchString};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{RequestInterval}) {
+        $health_check_config->{request_interval} =
+            $data->{HealthCheck}{HealthCheckConfig}{RequestInterval};
+    }
+    
+    if (exists $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold}) {
+        $health_check_config->{failure_threshold} =
+            $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold};
+    }
+
+    $health_check->{health_check_config} = $health_check_config;
+    
+    return { health_check => $health_check };
+}
 
 # TODO: list_health_checks
 
