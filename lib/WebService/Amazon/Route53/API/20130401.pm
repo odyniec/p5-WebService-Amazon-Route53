@@ -1147,54 +1147,8 @@ sub create_health_check {
     }
     
     $data = $self->{xs}->XMLin($response->{content});
-
-    my $health_check = {
-        id => $data->{HealthCheck}{Id},
-        caller_reference => $data->{HealthCheck}{CallerReference},
-    };
-
-    my $health_check_config = {
-        type => lc $data->{HealthCheck}{HealthCheckConfig}{Type},
-    };
-
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{IPAddress}) {
-        $health_check_config->{ip_address} =
-            $data->{HealthCheck}{HealthCheckConfig}{IPAddress};
-    }
-
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{Port}) {
-        $health_check_config->{port} =
-            $data->{HealthCheck}{HealthCheckConfig}{Port};
-    }
     
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{ResourcePath}) {
-        $health_check_config->{resource_path} =
-            $data->{HealthCheck}{HealthCheckConfig}{ResourcePath};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName}) {
-        $health_check_config->{fully_qualified_domain_name} =
-            $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{SearchString}) {
-        $health_check_config->{search_string} =
-            $data->{HealthCheck}{HealthCheckConfig}{SearchString};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{RequestInterval}) {
-        $health_check_config->{request_interval} =
-            $data->{HealthCheck}{HealthCheckConfig}{RequestInterval};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold}) {
-        $health_check_config->{failure_threshold} =
-            $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold};
-    }
-
-    $health_check->{health_check_config} = $health_check_config;
-    
-    return { health_check => $health_check };
+    return { health_check => _parse_health_check_response($data) };
 }
 
 =head2 get_health_check
@@ -1251,53 +1205,7 @@ sub get_health_check {
     
     my $data = $self->{xs}->XMLin($response->{content});
 
-    my $health_check = {
-        id => $data->{HealthCheck}{Id},
-        caller_reference => $data->{HealthCheck}{CallerReference},
-    };
-
-    my $health_check_config = {
-        type => lc $data->{HealthCheck}{HealthCheckConfig}{Type},
-    };
-
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{IPAddress}) {
-        $health_check_config->{ip_address} =
-            $data->{HealthCheck}{HealthCheckConfig}{IPAddress};
-    }
-
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{Port}) {
-        $health_check_config->{port} =
-            $data->{HealthCheck}{HealthCheckConfig}{Port};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{ResourcePath}) {
-        $health_check_config->{resource_path} =
-            $data->{HealthCheck}{HealthCheckConfig}{ResourcePath};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName}) {
-        $health_check_config->{fully_qualified_domain_name} =
-            $data->{HealthCheck}{HealthCheckConfig}{FullyQualifiedDomainName};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{SearchString}) {
-        $health_check_config->{search_string} =
-            $data->{HealthCheck}{HealthCheckConfig}{SearchString};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{RequestInterval}) {
-        $health_check_config->{request_interval} =
-            $data->{HealthCheck}{HealthCheckConfig}{RequestInterval};
-    }
-    
-    if (exists $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold}) {
-        $health_check_config->{failure_threshold} =
-            $data->{HealthCheck}{HealthCheckConfig}{FailureThreshold};
-    }
-
-    $health_check->{health_check_config} = $health_check_config;
-    
-    return { health_check => $health_check };
+    return { health_check => _parse_health_check_response($data) };
 }
 
 # TODO: list_health_checks
@@ -1341,6 +1249,40 @@ sub delete_health_check {
     }
     
     return 1;
+}
+
+sub _parse_health_check_response {
+    my ($data) = @_;
+
+    my $health_check = {
+        id => $data->{HealthCheck}{Id},
+        caller_reference => $data->{HealthCheck}{CallerReference},
+    };
+
+    my $health_check_config = {
+        type => lc $data->{HealthCheck}{HealthCheckConfig}{Type},
+    };
+
+    my %fields = (
+        IPAddress                   => 'ip_address',
+        Port                        => 'port',
+        ResourcePath                => 'resource_path',
+        FullyQualifiedDomainName    => 'fully_qualified_domain_name',
+        SearchString                => 'search_string',
+        RequestInterval             => 'request_interval',
+        FailureThreshold            => 'failure_threshold',       
+    );
+
+    for (keys %fields) {
+        if (exists $data->{HealthCheck}{HealthCheckConfig}{$_}) {
+            $health_check_config->{$fields{$_}} =
+                $data->{HealthCheck}{HealthCheckConfig}{$_};
+        }
+    }
+
+    $health_check->{health_check_config} = $health_check_config;
+
+    return $health_check;
 }
 
 1;
