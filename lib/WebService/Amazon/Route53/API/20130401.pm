@@ -1212,7 +1212,78 @@ sub get_health_check {
     };
 }
 
-# TODO: list_health_checks
+=head2 list_health_checks
+
+Gets a list of health checks.
+
+    $response = $r53->list_health_checks(max_items => 10);
+
+Parameters:
+
+=over 4
+
+=item * marker
+
+FIXME
+
+=item * max_items
+
+FIXME
+
+=back
+
+Returns: A reference to a hash containing health check data, and a next marker
+if more health checks are available. Example:
+
+    $response = {
+        'health_checks' => [
+            FIXME
+        ],
+        'next_marker' => FIXME
+    };
+
+=cut
+
+sub list_health_checks {
+    my ($self, %args) = @_;
+    
+    my $url = $self->{api_url} . 'healthcheck';
+    my $separator = '?';
+    
+    if (defined $args{'marker'}) {
+        $url .= $separator . 'marker=' . uri_escape($args{'marker'});
+        $separator = '&';
+    }
+    
+    if (defined $args{'max_items'}) {
+        $url .= $separator . 'maxitems=' . uri_escape($args{'max_items'});
+    }
+    
+    my $response = $self->_request('GET', $url);
+    
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return;
+    }
+    
+    my $data = $self->{'xs'}->XMLin($response->{content},
+        ForceArray => [ 'HealthCheck' ]);
+    my $health_checks = [];
+    my $next_marker;
+    
+    foreach my $hc_data (@{$data->{HealthChecks}{HealthCheck}}) {
+        push(@$health_checks, _parse_health_check_response($hc_data));
+    }
+    
+    if (exists $data->{NextMarker}) {
+        $next_marker = $data->{NextMarker};
+    }
+    
+    return {
+        health_checks => $health_checks,
+        (next_marker => $next_marker) x defined $next_marker
+    };
+}
 
 =head2 delete_health_check
 
