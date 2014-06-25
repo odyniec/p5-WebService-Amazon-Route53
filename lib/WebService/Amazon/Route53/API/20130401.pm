@@ -1148,7 +1148,9 @@ sub create_health_check {
     
     $data = $self->{xs}->XMLin($response->{content});
     
-    return { health_check => _parse_health_check_response($data) };
+    return {
+        health_check => _parse_health_check_response($data->{HealthCheck})
+    };
 }
 
 =head2 get_health_check
@@ -1205,7 +1207,9 @@ sub get_health_check {
     
     my $data = $self->{xs}->XMLin($response->{content});
 
-    return { health_check => _parse_health_check_response($data) };
+    return {
+        health_check => _parse_health_check_response($data->{HealthCheck})
+    };
 }
 
 # TODO: list_health_checks
@@ -1255,12 +1259,12 @@ sub _parse_health_check_response {
     my ($data) = @_;
 
     my $health_check = {
-        id => $data->{HealthCheck}{Id},
-        caller_reference => $data->{HealthCheck}{CallerReference},
+        id => $data->{Id},
+        caller_reference => $data->{CallerReference},
     };
 
     my $health_check_config = {
-        type => lc $data->{HealthCheck}{HealthCheckConfig}{Type},
+        type => lc $data->{HealthCheckConfig}{Type},
     };
 
     my %fields = (
@@ -1274,9 +1278,9 @@ sub _parse_health_check_response {
     );
 
     for (keys %fields) {
-        if (exists $data->{HealthCheck}{HealthCheckConfig}{$_}) {
+        if (exists $data->{HealthCheckConfig}{$_}) {
             $health_check_config->{$fields{$_}} =
-                $data->{HealthCheck}{HealthCheckConfig}{$_};
+                $data->{HealthCheckConfig}{$_};
         }
     }
 
