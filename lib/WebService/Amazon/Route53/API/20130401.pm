@@ -99,22 +99,7 @@ sub list_hosted_zones {
     my $next_marker;
     
     foreach my $zone_data (@{$data->{HostedZones}{HostedZone}}) {
-        my $zone = {
-            id                          => $zone_data->{Id},
-            name                        => $zone_data->{Name},
-            caller_reference            => $zone_data->{CallerReference},
-            resource_record_set_count   => $zone_data->{ResourceRecordSetCount},
-        };
-        
-        if (exists $zone_data->{Config}) {
-            $zone->{config} = {};
-            
-            if (exists $zone_data->{Config}{Comment}) {
-                $zone->{config}{comment} = $zone_data->{Config}{Comment};
-            }
-        }
-        
-        push(@$zones, $zone);
+        push(@$zones, _parse_hosted_zone_response($zone_data));
     }
     
     if (exists $data->{NextMarker}) {
@@ -192,24 +177,8 @@ sub get_hosted_zone {
     my $data = $self->{'xs'}->XMLin($response->{content},
         ForceArray => [ 'NameServer' ]);
     
-    my $zone = {
-        id => $data->{HostedZone}{Id},
-        name => $data->{HostedZone}{Name},
-        caller_reference => $data->{HostedZone}{CallerReference},
-        resource_record_set_count => $data->{HostedZone}{ResourceRecordSetCount}
-    };
-    
-    if (exists $data->{HostedZone}->{Config}) {
-        $zone->{config} = {};
-        
-        if (exists $data->{HostedZone}{Config}{Comment}) {
-            $zone->{config}{comment} =
-                $data->{HostedZone}{Config}{Comment};
-        }
-    }
-    
     return {
-        hosted_zone => $zone,
+        hosted_zone => _parse_hosted_zone_response($data->{HostedZone}),
         delegation_set => {
             name_servers => $data->{DelegationSet}{NameServers}{NameServer}
         }
@@ -376,14 +345,8 @@ sub create_hosted_zone {
     $data = $self->{xs}->XMLin($response->{content},
         ForceArray => [ 'NameServer' ]);
     
-    my $ret = {
-        hosted_zone => {
-            id => $data->{HostedZone}{Id},
-            name => $data->{HostedZone}{Name},
-            caller_reference => $data->{HostedZone}{CallerReference},
-            resource_record_set_count =>
-                $data->{HostedZone}{ResourceRecordSetCount},
-        },
+    return {
+        hosted_zone => _parse_hosted_zone_response($data->{HostedZone}),
         change_info => {
             id => $data->{ChangeInfo}{Id},
             status => $data->{ChangeInfo}{Status},
@@ -393,17 +356,6 @@ sub create_hosted_zone {
             name_servers => $data->{DelegationSet}{NameServers}{NameServer},
         }
     };
-    
-    if (exists $data->{HostedZone}{Config}) {
-        $ret->{hosted_zone}{config} = {};
-        
-        if (exists $data->{HostedZone}{Config}{Comment}) {
-            $ret->{hosted_zone}{config}{comment} =
-                $data->{HostedZone}{Config}{Comment};
-        }
-    }
-    
-    return $ret;
 }
 
 =head2 delete_hosted_zone
@@ -1344,6 +1296,27 @@ sub delete_health_check {
     }
     
     return 1;
+}
+
+sub _parse_hosted_zone_response {
+    my ($data) = @_;
+
+    my $hosted_zone = {
+        id => $data->{Id},
+        name => $data->{Name},
+        caller_reference => $data->{CallerReference},
+        resource_record_set_count => $data->{ResourceRecordSetCount},
+    };
+
+    if (exists $data->{Config}) {
+        $hosted_zone->{config} = {};
+        
+        if (exists $data->{Config}{Comment}) {
+            $hosted_zone->{config}{comment} = $data->{Config}{Comment};
+        }
+    }
+
+    return $hosted_zone;
 }
 
 sub _parse_health_check_response {
