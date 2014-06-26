@@ -1310,6 +1310,25 @@ sub delete_health_check {
     return 1;
 }
 
+=head2 error
+
+Returns the last error.
+
+    $error = $r53->error;
+    
+Returns: A reference to a hash containing the type, code, and message of the
+last error. Example:
+
+    $error = {
+        'type' => 'Sender',
+        'message' => 'FATAL problem: UnsupportedCharacter encountered at  ',
+        'code' => 'InvalidDomainName'
+    };
+
+=cut
+
+# Subroutines used internally
+
 sub _parse_hosted_zone_response {
     my ($data) = @_;
 
