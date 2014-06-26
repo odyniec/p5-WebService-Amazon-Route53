@@ -1224,11 +1224,12 @@ Parameters:
 
 =item * marker
 
-FIXME
+Indicates where to begin the results set. This is the ID of the first health
+check to include in the results.
 
 =item * max_items
 
-FIXME
+The maximum number of health checks to retrieve.
 
 =back
 
@@ -1237,9 +1238,28 @@ if more health checks are available. Example:
 
     $response = {
         'health_checks' => [
-            FIXME
+            {
+                'id' => '01ab23cd-45ef-67ab-89cd-01ab23cd45ef',
+                'caller_reference' => 'check_01',
+                'health_check_config' => {
+                    'type' => 'http',
+                    'fully_qualified_domain_name' => 'example.com',
+                    'request_interval' => '10',
+                    'failure_threshold' => '3',
+                    'port' => '80'
+            },
+            {
+                'id' => 'ab23cd01-ef45-ab67-cd89-ab23cd45ef01',
+                'caller_reference' => 'check_02',
+                'health_check_config' => {
+                    'type' => 'https',
+                    'fully_qualified_domain_name' => 'example.com',
+                    'request_interval' => '30',
+                    'failure_threshold' => '3',
+                    'port' => '443'
+            },
         ],
-        'next_marker' => FIXME
+        'next_marker' => '23cd01ab-45ef-67ab-89cd-23cd45ef01ab'
     };
 
 =cut
