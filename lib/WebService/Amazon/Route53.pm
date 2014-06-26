@@ -87,6 +87,11 @@ B<(Required)> AWS access key ID.
 
 B<(Required)> Secret access key.
 
+=item * version
+
+Route53 API version (either C<"2013-04-01"> or C<"2011-05-05">, default:
+C<"2013-04-01">).
+
 =back
 
 =cut
