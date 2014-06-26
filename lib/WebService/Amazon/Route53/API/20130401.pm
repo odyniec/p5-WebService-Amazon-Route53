@@ -9,6 +9,18 @@ use URI::Escape;
 use WebService::Amazon::Route53::API;
 use parent 'WebService::Amazon::Route53::API';
 
+=head1 METHODS
+
+=head2 new
+
+Creates a new instance of WebService::Amazon::Route53::API::20130401.
+
+This method should not be used directly -- instead, call
+L<WebService::Amazon::Route53>->new and pass the desired API version as the
+C<version> argument.
+
+=cut
+
 sub new {
     my ($class, %args) = @_;
 
