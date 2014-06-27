@@ -65,8 +65,8 @@ my @versions = ( qw/ 20110505 20130401 / );
 
 Required parameters are marked as such, other parameters are optional.
 
-Instance methods return C<undef> on failure. More detailed error information can
-be obtained by calling L<"error">.
+Instance methods return a false value on failure. More detailed error
+information can be obtained by calling L<"error">.
 
 =head2 new
 
