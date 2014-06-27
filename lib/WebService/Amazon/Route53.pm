@@ -105,11 +105,8 @@ C<"2013-04-01">).
 sub new {
     my ($class, %args) = @_;
     
-    ## Use most recent API version by default
-    #my $version = $versions[$#versions];
-
-    # Use 2011-05-05 by default (until the recent one is properly implemented)
-    my $version = '20110505';
+    # Use most recent API version by default
+    my $version = $versions[$#versions];
 
     if (defined $args{'version'}) {
         ($version = $args{'version'}) =~ s/[^0-9]//g;
