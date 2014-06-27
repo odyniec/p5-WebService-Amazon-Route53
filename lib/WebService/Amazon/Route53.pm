@@ -25,7 +25,8 @@ service.
                              caller_reference => 'example.com_migration_01');
     
     # Get zone information
-    my $zone = $r53->find_hosted_zone(name => 'example.com.');
+    my $response = $r53->find_hosted_zone(name => 'example.com.');
+    my $zone = $response->{hosted_zone};
     
     # Create a new record
     $r53->change_resource_record_sets(zone_id => $zone->{id},
