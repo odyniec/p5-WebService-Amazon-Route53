@@ -1024,7 +1024,7 @@ when the next health check request is sent (C<10> or C<30>, default: C<30>).
 =item * failure_threshold
 
 The number of consecutive health checks that an endpoint must pass or fail to
-change the crrent status of the endpoint from unhealthy to healthy or vice
+change the current status of the endpoint from unhealthy to healthy or vice
 versa (a value between C<1> and C<10>, default: C<3>).
 
 =back

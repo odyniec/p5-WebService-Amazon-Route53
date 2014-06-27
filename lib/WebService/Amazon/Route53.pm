@@ -83,7 +83,7 @@ Creates a new instance of a WebService::Amazon::Route53 API class.
 Based on the value of the C<version> parameter, the matching subclass of
 WebService::Amazon::Route53::API is instantiated (e.g., for C<version> set to
 C<"2013-04-01">, L<WebService::Amazon::Route53::API::20130401> is used). If the
-C<version> parameter is ommitted, the latest supported version is selected
+C<version> parameter is omitted, the latest supported version is selected
 (currently C<"2013-04-01">).
 
 Parameters:
@@ -598,7 +598,7 @@ when the next health check request is sent (C<10> or C<30>, default: C<30>).
 =item * failure_threshold
 
 The number of consecutive health checks that an endpoint must pass or fail to
-change the crrent status of the endpoint from unhealthy to healthy or vice
+change the current status of the endpoint from unhealthy to healthy or vice
 versa (a value between C<1> and C<10>, default: C<3>).
 
 =back
