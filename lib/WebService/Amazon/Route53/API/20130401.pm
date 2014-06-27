@@ -29,7 +29,7 @@ sub new {
     $self->{api_version} = '2013-04-01';
     $self->{api_url} = $self->{base_url} . $self->{api_version} . '/';
 
-    return $self;    
+    return $self;
 }
 
 =head2 list_hosted_zones
@@ -214,7 +214,7 @@ B<(Required)> Hosted zone name.
 =back
 
 Returns: A reference to a hash containing zone data and name servers information
-(see L<"get_hosted_zone">), or C<undef> if there is no hosted zone with the
+(see L<"get_hosted_zone">), or a false value if there is no hosted zone with the
 given name.
 
 =cut
@@ -1286,7 +1286,8 @@ B<(Required)> The ID of the health check to be deleted.
 
 =back
 
-Returns: C<1> if the health check was successfully deleted, C<undef> otherwise.
+Returns: C<1> if the health check was successfully deleted, a false value
+otherwise.
 
 =cut
 
