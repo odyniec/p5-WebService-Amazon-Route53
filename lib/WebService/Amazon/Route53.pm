@@ -70,10 +70,16 @@ information can be obtained by calling L<"error">.
 
 =head2 new
 
-Creates a new instance of WebService::Amazon::Route53.
+Creates a new instance of a WebService::Amazon::Route53 API class.
 
     my $r53 = WebService::Amazon::Route53->new(id => 'ROUTE53ID',
                                                key => 'SECRETKEY');
+
+Based on the value of the C<version> parameter, the matching subclass of
+WebService::Amazon::Route53::API is instantiated (e.g., for C<version> set to
+C<"2013-04-01">, L<WebService::Amazon::Route53::API::20130401> is used). If the
+C<version> parameter is ommitted, the latest supported version is selected
+(currently C<"2013-04-01">).
 
 Parameters:
 
