@@ -495,7 +495,7 @@ Balancing load balancer, or another resource record set in this hosted zone.
 
 =item * evaluate_target_health
 
-TODO: document (C<0> or C<1>).
+Inherit the health of the referenced resource record sets (C<0> or C<1>).
 
 =back
 
@@ -505,7 +505,8 @@ Amazon EC2 region name.
 
 =item * failover
 
-TODO: document (C<"PRIMARY"> or C<"SECONDARY">).
+Make this a primary or secondary failover resource record set (C<"PRIMARY"> or
+C<"SECONDARY">).
 
 =back
 
