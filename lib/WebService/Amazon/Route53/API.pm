@@ -14,6 +14,10 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(_ordered_hash);
 
+=for Pod::Coverage new error
+
+=cut
+
 sub new {
     my ($class, %args) = @_;
 
