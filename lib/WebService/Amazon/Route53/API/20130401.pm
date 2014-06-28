@@ -626,35 +626,35 @@ sub list_resource_record_sets {
 Makes changes to DNS record sets.
 
     $change_info = $r53->change_resource_record_sets(zone_id => '123ZONEID',
-            changes => [
-                # Delete the current A record
-                {
-                    action => 'delete',
-                    name => 'www.example.com.',
-                    type => 'A',
-                    ttl => 86400,
-                    value => '12.34.56.78'
-                },
-                # Create a new A record with a different value
-                {
-                    action => 'create',
-                    name => 'www.example.com.',
-                    type => 'A',
-                    ttl => 86400,
-                    value => '34.56.78.90'
-                },
-                # Create two new MX records
-                {
-                    action => 'create',
-                    name => 'example.com.',
-                    type => 'MX',
-                    ttl => 86400,
-                    records => [
-                        '10 mail.example.com',
-                        '20 mail2.example.com'
-                    ]
-                }
-            ]);
+        changes => [
+            # Delete the current A record
+            {
+                action => 'delete',
+                name => 'www.example.com.',
+                type => 'A',
+                ttl => 86400,
+                value => '12.34.56.78'
+            },
+            # Create a new A record with a different value
+            {
+                action => 'create',
+                name => 'www.example.com.',
+                type => 'A',
+                ttl => 86400,
+                value => '34.56.78.90'
+            },
+            # Create two new MX records
+            {
+                action => 'create',
+                name => 'example.com.',
+                type => 'MX',
+                ttl => 86400,
+                records => [
+                    '10 mail.example.com',
+                    '20 mail2.example.com'
+                ]
+            }
+        ]);
         
 If there is just one change to be made, you can use the simplified call syntax,
 and pass the change parameters directly, instead of using the C<changes>
