@@ -5,7 +5,6 @@ use strict;
 
 use Carp;
 use URI::Escape;
-use XML::Simple;
 
 use WebService::Amazon::Route53::API;
 use parent 'WebService::Amazon::Route53::API';
