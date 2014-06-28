@@ -505,8 +505,8 @@ Amazon EC2 region name.
 
 =item * failover
 
-Make this a primary or secondary failover resource record set (C<"PRIMARY"> or
-C<"SECONDARY">).
+Make this a primary or secondary failover resource record set (C<"primary"> or
+C<"secondary">).
 
 =back
 

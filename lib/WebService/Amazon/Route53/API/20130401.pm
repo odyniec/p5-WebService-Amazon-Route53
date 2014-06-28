@@ -598,7 +598,7 @@ sub list_resource_record_sets {
         # Failover resource record sets
 
         if (exists $set_data->{Failover}) {
-            $record_set->{failover} = $set_data->{Failover};
+            $record_set->{failover} = lc $set_data->{Failover};
         }
         
         push(@$record_sets, $record_set); 
@@ -755,8 +755,8 @@ Amazon EC2 region name.
 
 =item * failover
 
-Make this a primary or secondary failover resource record set (C<"PRIMARY"> or
-C<"SECONDARY">).
+Make this a primary or secondary failover resource record set (C<"primary"> or
+C<"secondary">).
 
 =back
 
@@ -880,7 +880,7 @@ sub change_resource_record_sets {
         # Failover resource record sets
 
         if (exists $change->{failover}) {
-            $change_rrset->{Failover} = [ $change->{failover} ];
+            $change_rrset->{Failover} = [ uc $change->{failover} ];
         }
         
         push(@{$data->{ChangeBatch}{Changes}[0]{Change}}, $change_data);
