@@ -53,6 +53,8 @@ sub error {
     return $self->{error};
 }
 
+# "Private" methods
+
 sub _get_server_date {
     my ($self) = @_;
     
@@ -102,6 +104,8 @@ sub _parse_error {
         message => $data->{Error}->{Message}
     };
 }
+
+# Helpful subroutines
 
 # Amazon expects XML elements in specific order, so we'll need to pass the data
 # to XML::Simple as ordered hashes
