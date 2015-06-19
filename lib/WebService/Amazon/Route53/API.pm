@@ -5,14 +5,18 @@ use strict;
 
 use Carp;
 use Digest::HMAC_SHA1;
+use Digest::SHA qw/sha256_hex hmac_sha256 hmac_sha256_hex/;
 use HTTP::Tiny;
 use MIME::Base64;
 use Tie::IxHash;
 use XML::Simple;
+use DateTime;
+use URI;
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(_ordered_hash);
+our $ALGORITHM = 'AWS4-HMAC-SHA256';
 
 =for Pod::Coverage new error
 
@@ -48,6 +52,16 @@ sub new {
 
     $self->{base_url} = 'https://route53.amazonaws.com/';
 
+    $self->{service}       = 'route53';
+    $self->{host}          = 'route53.amazonaws.com';
+    $self->{region}        = 'us-east-1';
+    $self->{endpoint}      = 'https://route53.amazonaws.com/';
+    $self->{signed_header} = 'host;x-amz-date';
+
+    my $dt = DateTime->now();
+    $self->{amzdate}       = $dt->strftime('%Y%m%dT%H%M%SZ');
+    $self->{datestamp}     = $dt->strftime('%Y%m%d');
+
     return bless $self, $class;
 }
 
@@ -72,31 +86,95 @@ sub _get_server_date {
     return $date;    
 }
 
+# sub _request {
+#     my ($self, $method, $url, $options) = @_;
+    
+#     my $date = $self->_get_server_date;
+
+#     my $hmac = Digest::HMAC_SHA1->new($self->{'key'});
+#     $hmac->add($date);
+#     my $sig = encode_base64($hmac->digest, undef);
+    
+#     my $auth = 'AWS3-HTTPS AWSAccessKeyId=' . $self->{'id'} . ',' .
+#         'Algorithm=HmacSHA1,Signature=' . $sig;
+#     # Remove trailing newlines, if any
+#     $auth =~ s/\n//g;
+    
+#     $options = {} if !defined $options;
+
+#     $options->{headers}->{'Content-Type'} = 'text/xml';
+#     $options->{headers}->{'Date'} = $date;
+#     $options->{headers}->{'X-Amzn-Authorization'} = $auth;
+    
+#     # my $response = $self->{ua}->request($method, $url, $options);
+
+# #     # return $response;    
+# }
+
 sub _request {
     my ($self, $method, $url, $options) = @_;
-    
-    my $date = $self->_get_server_date;
-    
-    my $hmac = Digest::HMAC_SHA1->new($self->{'key'});
-    $hmac->add($date);
-    my $sig = encode_base64($hmac->digest, undef);
-    
-    my $auth = 'AWS3-HTTPS AWSAccessKeyId=' . $self->{'id'} . ',' .
-        'Algorithm=HmacSHA1,Signature=' . $sig;
-    # Remove trailing newlines, if any
-    $auth =~ s/\n//g;
-    
+
+    my $signing_key = $self->_get_signature_key;
+    my $canonical_request = $self->_create_cononical( $method, $url );
+
+    my $credential_scope = $self->{datestamp} . '/' . $self->{region} . '/' .
+                           $self->{service} . '/' . 'aws4_request';
+
+    my $string_to_sign =  $ALGORITHM . "\n" . $self->{amzdate} . "\n" .
+                        $credential_scope . "\n" . 
+                        sha256_hex($canonical_request);
+
+    my $signature   = hmac_sha256_hex($string_to_sign, $signing_key);
+
+    my $authorization_header =  $ALGORITHM . ' ' . 'Credential=' . $self->{'id'} . '/' .
+                                $credential_scope . ',' . 'SignedHeaders=' . $self->{signed_header} . ', ' .
+                                'Signature=' . $signature;
+
     $options = {} if !defined $options;
 
-    $options->{headers}->{'Content-Type'} = 'text/xml';
-    $options->{headers}->{'Date'} = $date;
-    $options->{headers}->{'X-Amzn-Authorization'} = $auth;
+    $options->{headers}->{'x-amz-date'} = $self->{amzdate};
+    $options->{headers}->{'Authorization'} = $authorization_header;
     
     my $response = $self->{ua}->request($method, $url, $options);
 
     return $response;    
 }
 
+sub _get_signature_key {
+    my $self = shift;
+
+    my $k_date    = hmac_sha256( $self->{datestamp}, 'AWS4' . $self->{key} );
+    my $k_region  = hmac_sha256( $self->{endpoint}, $k_date );
+    my $k_service = hmac_sha256( $self->{service}, $k_region );
+    my $k_signing = hmac_sha256( 'aws4_request', $k_service );
+
+    return $k_signing; 
+}
+
+sub _create_cononical {
+    my ($self, $method, $url, $query_string) = @_;
+    
+    my $uri = URI->new($url);
+
+    my $dt = DateTime->now;
+    my $date = $dt->strftime('%Y%m%dT%H%M%SZ');
+
+    my $canonical_uri = $uri->path;
+    my $canonical_querystring = $uri->query; #request_parameter
+    my $canonical_header  =  'host:' . $self->{host} . "\n" . 
+                            'x-amz-date:' . $date . "\n";
+
+    my $payload_hash = sha256_hex('', undef);
+
+    my $canonical_request = $method . "\n" . $canonical_uri . "\n" .
+                            $canonical_querystring . "\n" .
+                            $canonical_header . "\n" .
+                            $self->{signed_header} . "\n" .
+                            $payload_hash;
+
+    return $canonical_request;
+    
+}
 sub _parse_error {
     my ($self, $xml) = @_;
     
