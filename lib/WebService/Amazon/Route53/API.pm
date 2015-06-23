@@ -121,10 +121,10 @@ sub _request {
                            $self->{service} . '/' . 'aws4_request';
 
     my $string_to_sign =  $ALGORITHM . "\n" . $self->{amzdate} . "\n" .
-                        $credential_scope . "\n" . 
-                        sha256_hex($canonical_request);
+                        $credential_scope . "\n" .
+                        sha256_hex( $canonical_request );
 
-    my $signature   = hmac_sha256_hex($string_to_sign, $signing_key);
+    my $signature   = sha256_hex($string_to_sign, $signing_key);
 
     my $authorization_header =  $ALGORITHM . ' ' . 'Credential=' . $self->{'id'} . '/' .
                                 $credential_scope . ',' . 'SignedHeaders=' . $self->{signed_header} . ', ' .
@@ -161,16 +161,16 @@ sub _create_cononical {
 
     my $canonical_uri = $uri->path;
     my $canonical_querystring = $uri->query; #request_parameter
-    my $canonical_header  =  'host:' . $self->{host} . "\n" . 
+    my $canonical_header  =  'host:' . $self->{host} . "\n" .
                             'x-amz-date:' . $date . "\n";
 
     my $payload_hash;
     if( uc( $method ) eq 'GET' ){
         $payload_hash = sha256_hex('');
     } else {
-        $payload_hash = sha256_hex($canonical_querystring);
+        $payload_hash = sha256_hex( $canonical_querystring );
     }
-
+ 
     my $canonical_request = $method . "\n" . $canonical_uri . "\n" .
                             $canonical_querystring . "\n" .
                             $canonical_header . "\n" .
