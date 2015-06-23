@@ -854,6 +854,30 @@ sub change_resource_record_sets {
             $change_rrset->{SetIdentifier} = [ $change->{set_identifier} ];
         }
 
+        if (exists $change->{geo_continent_code}) {
+            $change_rrset->{GeoLocation}->{ContinentCode} = [ $change->{geo_continent_code} ];
+        }
+
+        if (exists $change->{geo_country_code}) {
+            $change_rrset->{GeoLocation}->{CountryCode} = [ $change->{geo_country_code} ];
+        }
+
+        if (exists $change->{geo_subdivision_code}) {
+            $change_rrset->{GeoLocation}->{SubdivisionCode} = [ $change->{geo_subdivision_code} ];
+        }
+
+        if (exists $change->{geo_continent_name}) {
+            $change_rrset->{GeoLocation}->{ContinentName} = [ $change->{geo_continent_name} ];
+        }
+
+        if (exists $change->{geo_country_name}) {
+            $change_rrset->{GeoLocation}->{CountryName} = [ $change->{geo_country_name} ];
+        }
+
+        if (exists $change->{geo_subdivision_name}) {
+            $change_rrset->{GeoLocation}->{SubdivisionName} = [ $change->{geo_subdivision_name} ];
+        }
+
         if (exists $change->{weight}) {
             $change_rrset->{Weight} = [ $change->{weight} ];
         }
