@@ -164,7 +164,12 @@ sub _create_cononical {
     my $canonical_header  =  'host:' . $self->{host} . "\n" . 
                             'x-amz-date:' . $date . "\n";
 
-    my $payload_hash = sha256_hex('', undef);
+    my $payload_hash;
+    if( uc( $method ) eq 'GET' ){
+        $payload_hash = sha256_hex('');
+    } else {
+        $payload_hash = sha256_hex($canonical_querystring);
+    }
 
     my $canonical_request = $method . "\n" . $canonical_uri . "\n" .
                             $canonical_querystring . "\n" .
