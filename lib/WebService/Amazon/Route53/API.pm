@@ -117,22 +117,21 @@ sub _request {
     my $signing_key = $self->_get_signature_key;
     my $canonical_request = $self->_create_cononical( $method, $url );
 
-    my $credential_scope = $self->{datestamp} . '/' . $self->{region} . '/' .
-                           $self->{service} . '/' . 'aws4_request';
+    my $credential_scope  = join '/', $self->{datestamp}, $self->{region},
+                           $self->{service}, 'aws4_request';
 
-    my $string_to_sign =  $ALGORITHM . "\n" . $self->{amzdate} . "\n" .
-                        $credential_scope . "\n" .
-                        sha256_hex( $canonical_request );
+    my $string_to_sign    =  join "\n", $ALGORITHM, $self->{amzdate},
+                        $credential_scope, sha256_hex( $canonical_request );
 
-    my $signature   = sha256_hex($string_to_sign, $signing_key);
+    my $signature = hmac_sha256_hex($string_to_sign, $signing_key);
 
     my $authorization_header =  $ALGORITHM . ' ' . 'Credential=' . $self->{'id'} . '/' .
-                                $credential_scope . ',' . 'SignedHeaders=' . $self->{signed_header} . ', ' .
+                                $credential_scope . ', ' . 'SignedHeaders=' . $self->{signed_header} . ', ' .
                                 'Signature=' . $signature;
 
     $options = {} if !defined $options;
 
-    $options->{headers}->{'x-amz-date'} = $self->{amzdate};
+    $options->{headers}->{'x-amz-date'}    = $self->{amzdate};
     $options->{headers}->{'Authorization'} = $authorization_header;
     
     my $response = $self->{ua}->request($method, $url, $options);
@@ -160,7 +159,7 @@ sub _create_cononical {
     my $date = $dt->strftime('%Y%m%dT%H%M%SZ');
 
     my $canonical_uri = $uri->path;
-    my $canonical_querystring = $uri->query; #request_parameter
+    my $canonical_querystring = $uri->query;
     my $canonical_header  =  'host:' . $self->{host} . "\n" .
                             'x-amz-date:' . $date . "\n";
 
@@ -171,10 +170,10 @@ sub _create_cononical {
         $payload_hash = sha256_hex( $canonical_querystring );
     }
  
-    my $canonical_request = $method . "\n" . $canonical_uri . "\n" .
-                            $canonical_querystring . "\n" .
-                            $canonical_header . "\n" .
-                            $self->{signed_header} . "\n" .
+    my $canonical_request = join "\n", $method, $canonical_uri,
+                            $canonical_querystring,
+                            $canonical_header,
+                            $self->{signed_header},
                             $payload_hash;
 
     return $canonical_request;
