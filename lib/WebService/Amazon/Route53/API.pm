@@ -4,7 +4,6 @@ use warnings;
 use strict;
 
 use Carp;
-use Digest::HMAC_SHA1;
 use Digest::SHA qw/sha256_hex hmac_sha256 hmac_sha256_hex/;
 use HTTP::Tiny;
 use MIME::Base64;
@@ -73,61 +72,24 @@ sub error {
 
 # "Private" methods
 
-sub _get_server_date {
-    my ($self) = @_;
-    
-    my $response = $self->{ua}->get($self->{base_url} . 'date');
-    my $date = $response->{headers}->{'date'};
-    
-    if (!$date) {
-        carp "Can't get Amazon server date";
-    }
-    
-    return $date;    
-}
-
-# sub _request {
-#     my ($self, $method, $url, $options) = @_;
-    
-#     my $date = $self->_get_server_date;
-
-#     my $hmac = Digest::HMAC_SHA1->new($self->{'key'});
-#     $hmac->add($date);
-#     my $sig = encode_base64($hmac->digest, undef);
-    
-#     my $auth = 'AWS3-HTTPS AWSAccessKeyId=' . $self->{'id'} . ',' .
-#         'Algorithm=HmacSHA1,Signature=' . $sig;
-#     # Remove trailing newlines, if any
-#     $auth =~ s/\n//g;
-    
-#     $options = {} if !defined $options;
-
-#     $options->{headers}->{'Content-Type'} = 'text/xml';
-#     $options->{headers}->{'Date'} = $date;
-#     $options->{headers}->{'X-Amzn-Authorization'} = $auth;
-    
-#     # my $response = $self->{ua}->request($method, $url, $options);
-
-# #     # return $response;    
-# }
-
 sub _request {
     my ($self, $method, $url, $options) = @_;
 
     my $signing_key = $self->_get_signature_key;
+
     my $canonical_request = $self->_create_cononical( $method, $url );
 
     my $credential_scope  = join '/', $self->{datestamp}, $self->{region},
                            $self->{service}, 'aws4_request';
 
     my $string_to_sign    =  join "\n", $ALGORITHM, $self->{amzdate},
-                        $credential_scope, sha256_hex( $canonical_request );
+                            $credential_scope, sha256_hex( $canonical_request );
 
-    my $signature = hmac_sha256_hex($string_to_sign, $signing_key);
+    my $signature         = hmac_sha256_hex($string_to_sign, $signing_key);
 
-    my $authorization_header =  $ALGORITHM . ' ' . 'Credential=' . $self->{'id'} . '/' .
-                                $credential_scope . ', ' . 'SignedHeaders=' . $self->{signed_header} . ', ' .
-                                'Signature=' . $signature;
+    my $authorization_header =  "$ALGORITHM Credential=$self->{'id'}/$credential_scope, " . 
+                                "SignedHeaders=$self->{signed_header}, " . 
+                                "Signature=$signature";
 
     $options = {} if !defined $options;
 
@@ -153,15 +115,15 @@ sub _get_signature_key {
 sub _create_cononical {
     my ($self, $method, $url, $query_string) = @_;
     
-    my $uri = URI->new($url);
+    my $uri  = URI->new($url);
 
-    my $dt = DateTime->now;
+    my $dt   = DateTime->now;
     my $date = $dt->strftime('%Y%m%dT%H%M%SZ');
 
-    my $canonical_uri = $uri->path;
-    my $canonical_querystring = $uri->query;
-    my $canonical_header  =  'host:' . $self->{host} . "\n" .
-                            'x-amz-date:' . $date . "\n";
+    my $canonical_uri          = $uri->path;
+    my $canonical_querystring  = $uri->query;
+    my $canonical_header       =  'host:' . $self->{host} . "\n" .
+                                    'x-amz-date:' . $date . "\n";
 
     my $payload_hash;
     if( uc( $method ) eq 'GET' ){
@@ -179,6 +141,7 @@ sub _create_cononical {
     return $canonical_request;
     
 }
+
 sub _parse_error {
     my ($self, $xml) = @_;
     
