@@ -77,7 +77,7 @@ sub _request {
 
     my $signing_key = $self->_get_signature_key;
 
-    my $canonical_request = $self->_create_cononical( $method, $url );
+    my $canonical_request = $self->_create_cononical( $method, $url, $options );
 
     my $credential_scope  = join '/', $self->{datestamp}, $self->{region},
                            $self->{service}, 'aws4_request';
@@ -98,7 +98,7 @@ sub _request {
     
     my $response = $self->{ua}->request($method, $url, $options);
 
-    return $response;    
+    return $response;
 }
 
 sub _get_signature_key {
@@ -113,23 +113,23 @@ sub _get_signature_key {
 }
 
 sub _create_cononical {
-    my ($self, $method, $url, $query_string) = @_;
-    
+    my ($self, $method, $url, $options) = @_;
+
     my $uri  = URI->new($url);
 
     my $dt   = DateTime->now;
     my $date = $dt->strftime('%Y%m%dT%H%M%SZ');
 
     my $canonical_uri          = $uri->path;
-    my $canonical_querystring  = $uri->query;
-    my $canonical_header       =  'host:' . $self->{host} . "\n" .
+    my $canonical_querystring  = $uri->query || '';
+    my $canonical_header       = 'host:' . $self->{host} . "\n" .
                                     'x-amz-date:' . $date . "\n";
 
     my $payload_hash;
     if( uc( $method ) eq 'GET' ){
         $payload_hash = sha256_hex('');
     } else {
-        $payload_hash = sha256_hex( $canonical_querystring );
+        $payload_hash = sha256_hex( $options->{content} );
     }
  
     my $canonical_request = join "\n", $method, $canonical_uri,
