@@ -143,7 +143,7 @@ sub _get_signature_key {
     my $self = shift;
 
     my $k_date    = hmac_sha256( $self->{datestamp}, 'AWS4' . $self->{key} );
-    my $k_region  = hmac_sha256( $self->{endpoint}, $k_date );
+    my $k_region  = hmac_sha256( $self->{region}, $k_date );
     my $k_service = hmac_sha256( $self->{service}, $k_region );
     my $k_signing = hmac_sha256( 'aws4_request', $k_service );
 
