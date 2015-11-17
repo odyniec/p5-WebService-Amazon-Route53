@@ -28,6 +28,7 @@ sub new {
 
     $self->{api_version} = '2013-04-01';
     $self->{api_url} = $self->{base_url} . $self->{api_version} . '/';
+    $self->{xml_prolog} = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 
     return $self;
 }
@@ -344,7 +345,7 @@ sub create_hosted_zone {
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'CreateHostedZoneRequest');
     
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    $xml = $self->{xml_prolog} . $xml;
     
     my $response = $self->_request('POST', $self->{api_url} . 'hostedzone',
         { content => $xml });
@@ -889,7 +890,7 @@ sub change_resource_record_sets {
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'ChangeResourceRecordSetsRequest');
         
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    $xml = $self->{xml_prolog} . $xml;
         
     my $response = $self->_request('POST', 
         $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', 
@@ -1101,7 +1102,7 @@ sub create_health_check {
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'CreateHealthCheckRequest');
     
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    $xml = $self->{xml_prolog} . $xml;
 
     my $response = $self->_request('POST', $self->{api_url} . 'healthcheck',
         { content => $xml });
@@ -1309,6 +1310,57 @@ sub delete_health_check {
         return;
     }
     
+    return 1;
+}
+
+=head2 change_tags_for_resource
+
+=cut
+
+sub change_tags_for_resource {
+    my ($self, %args) = @_;
+
+    if (!defined $args{resource_type}) {
+        carp "Required parameter 'resource_type' is not defined";
+    }
+
+    if (!defined $args{resource_id}) {
+        carp "Required parameter 'resource_id' is not defined";
+    }
+
+    my $resource_type = $args{resource_type};
+    my $resource_id   = $args{resource_id};
+
+    my @tag;
+    if (defined $args{add_tags}) {
+        for my $k (keys $args{add_tags}) {
+            push @tag, { Key => [$k], Value => [ $args{add_tags}{$k} ] };
+        }
+    }
+
+    my $data = _ordered_hash(
+        xmlns => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
+        RemoveTagKeys => {
+            Key => $args{remove_tag_keys}
+        },
+        AddTags => {
+            Tag => \@tag
+        },
+    );
+
+    my $xml = $self->{xs}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'ChangeTagsForResourceRequest');
+    $xml = $self->{xml_prolog} . $xml;
+
+    my $response = $self->_request('POST',
+    $self->{api_url} . 'tags/' . $resource_type . '/' . $resource_id,
+    { content => $xml });
+
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return;
+    }
+
     return 1;
 }
 
