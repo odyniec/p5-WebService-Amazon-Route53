@@ -1364,6 +1364,45 @@ sub change_tags_for_resource {
     return 1;
 }
 
+=head2 list_tags_for_resource
+
+=cut
+
+sub list_tags_for_resource {
+    my ($self, %args) = @_;
+
+    if (!defined $args{resource_type}) {
+        carp "Required parameter 'resource_type' is not defined";
+    }
+
+    if (!defined $args{resource_id}) {
+        carp "Required parameter 'resource_id' is not defined";
+    }
+
+    my $resource_type = $args{resource_type};
+    my $resource_id   = $args{resource_id};
+
+    my $response = $self->_request('GET',
+    $self->{api_url} . 'tags/' . $resource_type . '/' . $resource_id );
+
+    my $data = $self->{xs}->XMLin($response->{content});
+
+    my $tags;
+    if (defined $data->{ResourceTagSet}) {
+        foreach my $t (@{$data->{ResourceTagSet}->{Tags}->{Tag}}) {
+            $tags->{$t->{Key}} = $t->{Value};
+        }
+    }
+
+    my $tags_data = {
+        type => $data->{ResourceTagSet}->{ResourceType},
+        id   => $data->{ResourceTagSet}->{ResourceId},
+        tags => $tags,
+    };
+
+    return $tags_data;
+}
+
 =head2 error
 
 Returns the last error.
