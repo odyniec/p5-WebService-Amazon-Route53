@@ -1387,11 +1387,62 @@ sub list_tags_for_resource {
 
     my $data = $self->{xs}->XMLin($response->{content});
 
-    my $tags;
-    if (defined $data->{ResourceTagSet}) {
-        foreach my $t (@{$data->{ResourceTagSet}->{Tags}->{Tag}}) {
-            $tags->{$t->{Key}} = $t->{Value};
+    return _parse_resource_tag_response($data);
+}
+
+=head2 list_tags_for_resources
+
+=cut
+
+sub list_tags_for_resources {
+    my ($self, %args) = @_;
+
+    if (!defined $args{resource_type}) {
+        carp "Required parameter 'resource_type' is not defined";
+    }
+
+    if (!defined $args{resource_id}) {
+        carp "Required parameter 'resource_id' is not defined";
+    }
+
+    my $resource_type = $args{resource_type};
+
+    my $data = _ordered_hash(
+        xmlns => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
+        ResourceIds => {
+            ResourceId => $args{resource_id}
         }
+    );
+
+    my $xml = $self->{xs}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'ListTagsForResourcesRequest');
+    $xml = $self->{xml_prolog} . $xml;
+
+    my $response = $self->_request('POST',
+    $self->{api_url} . 'tags/' . $resource_type,
+    { content => $xml });
+
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return;
+    }
+
+    $data = $self->{xs}->XMLin($response->{content});
+    $data = $data->{ResourceTagSets};
+
+    return _parse_resource_tag_response($data);
+}
+
+=head2 _parse_resource_tag_response
+
+=cut
+
+sub _parse_resource_tag_response {
+    my ($data) = @_;
+
+    my $tags;
+    foreach my $t (@{$data->{ResourceTagSet}->{Tags}->{Tag}}) {
+        $tags->{$t->{Key}} = $t->{Value};
     }
 
     my $tags_data = {
