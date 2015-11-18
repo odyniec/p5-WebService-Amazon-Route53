@@ -28,6 +28,7 @@ sub new {
 
     $self->{api_version} = '2013-04-01';
     $self->{api_url} = $self->{base_url} . $self->{api_version} . '/';
+    $self->{xml_prolog} = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 
     return $self;
 }
@@ -344,7 +345,7 @@ sub create_hosted_zone {
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'CreateHostedZoneRequest');
     
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    $xml = $self->{xml_prolog} . $xml;
     
     my $response = $self->_request('POST', $self->{api_url} . 'hostedzone',
         { content => $xml });
@@ -889,7 +890,7 @@ sub change_resource_record_sets {
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'ChangeResourceRecordSetsRequest');
         
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    $xml = $self->{xml_prolog} . $xml;
         
     my $response = $self->_request('POST', 
         $self->{api_url} . 'hostedzone/' . $zone_id . '/rrset', 
@@ -1101,7 +1102,7 @@ sub create_health_check {
     my $xml = $self->{'xs'}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
         RootName => 'CreateHealthCheckRequest');
     
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
+    $xml = $self->{xml_prolog} . $xml;
 
     my $response = $self->_request('POST', $self->{api_url} . 'healthcheck',
         { content => $xml });
@@ -1312,6 +1313,231 @@ sub delete_health_check {
     return 1;
 }
 
+=head2 change_tags_for_resource
+
+Adds tags to a health check or a hosted zone.
+
+    $response = $r53->change_tags_for_resource(
+        resource_type => 'hostedzone',
+        resource_id   => 'RESOURCEID',
+        remove_tag_keys  => ['key1', 'key2'],
+        add_tags => {
+            key1   => 'value1',
+            key2   => 'value2',
+        }
+    );
+
+Parameters:
+
+=over 4
+
+=item * resource_type
+
+B<(Required)> The type of resource to add, edit or delete tags,
+possible values are C<'healthcheck'> or C<'hostedzone'>.
+
+=item * resource_id
+
+B<(Required)> The ID of the health check or hosted zone to add, edit or delete tags.
+
+=back
+
+Returns: C<1> if the tags were successfully added, edited or deleted,
+a false value otherwise.
+
+=cut
+
+sub change_tags_for_resource {
+    my ($self, %args) = @_;
+
+    if (!defined $args{resource_type}) {
+        carp "Required parameter 'resource_type' is not defined";
+    }
+
+    if (!defined $args{resource_id}) {
+        carp "Required parameter 'resource_id' is not defined";
+    }
+
+    my $resource_type = $args{resource_type};
+    my $resource_id   = $args{resource_id};
+
+    my @tag;
+    if (defined $args{add_tags}) {
+        for my $k (keys $args{add_tags}) {
+            push @tag, { Key => [$k], Value => [ $args{add_tags}{$k} ] };
+        }
+    }
+
+    my $data = _ordered_hash(
+        xmlns => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
+        RemoveTagKeys => {
+            Key => $args{remove_tag_keys}
+        },
+        AddTags => {
+            Tag => \@tag
+        },
+    );
+
+    my $xml = $self->{xs}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'ChangeTagsForResourceRequest');
+    $xml = $self->{xml_prolog} . $xml;
+
+    my $response = $self->_request('POST',
+    $self->{api_url} . 'tags/' . $resource_type . '/' . $resource_id,
+    { content => $xml });
+
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return;
+    }
+
+    return 1;
+}
+
+=head2 list_tags_for_resource
+
+Lists tags for a health check or a hosted zone.
+
+    $response = $r53->list_tags_for_resource(
+        resource_type => 'hostedzone',
+        resource_id   => 'RESOURCEID'
+    );
+
+Parameters:
+
+=over 4
+
+=item * resource_type
+
+B<(Required)> The type of rescource to list tags, possible values are
+C<'healthcheck'> or C<'hostedzone'>.
+
+=item * resource_id
+
+B<(Required)> The ID of the health check or hosted zone to list tags.
+
+=back
+
+Returns: A reference to a hash containing the id, tags and type of the tags.
+Example:
+
+    $response = {
+        id => "RESOURCEID",
+        tags => { key1 => "value1", key2 => "value2" },
+        type => "hostedzone",
+    }
+
+=cut
+
+sub list_tags_for_resource {
+    my ($self, %args) = @_;
+
+    if (!defined $args{resource_type}) {
+        carp "Required parameter 'resource_type' is not defined";
+    }
+
+    if (!defined $args{resource_id}) {
+        carp "Required parameter 'resource_id' is not defined";
+    }
+
+    my $resource_type = $args{resource_type};
+    my $resource_id   = $args{resource_id};
+
+    my $response = $self->_request('GET',
+    $self->{api_url} . 'tags/' . $resource_type . '/' . $resource_id );
+
+    my $data = $self->{xs}->XMLin($response->{content});
+    $data = $data->{ResourceTagSet};
+
+    return _parse_resource_tag_response($data);
+}
+
+=head2 list_tags_for_resources
+
+Lists tags for up to 10 health checks or hosted zones.
+
+    my $response = $r53->list_tags_for_resources(
+        resource_type => 'hostedzone',
+        resource_id   => ['RESOURCEID1', 'RESOURCEID2']
+    );
+
+=item * resource_type
+
+B<(Required)> The type of rescource to list tags, possible values are
+C<'healthcheck'> or C<'hostedzone'>.
+
+=item * resource_id
+
+B<(Required)> The list of IDs of the health check or hosted zone to list tags.
+
+=back
+
+Returns: A reference to a array containing the id, tags and type of the tags.
+Example:
+
+    $response = [
+        {
+            id => "RESOURCEID1",
+            tags => { key1 => "value1", key2 => "value2" },
+            type => "hostedzone",
+        },
+        {
+            id => "RESOURCEID2",
+            tags => { key3 => "value3", key4 => "value4" },
+            type => "hostedzone",
+        },
+    ];
+
+=cut
+
+sub list_tags_for_resources {
+    my ($self, %args) = @_;
+
+    if (!defined $args{resource_type}) {
+        carp "Required parameter 'resource_type' is not defined";
+    }
+
+    if (!defined $args{resource_id}) {
+        carp "Required parameter 'resource_id' is not defined";
+    }
+
+    my $resource_type = $args{resource_type};
+
+    my $data = _ordered_hash(
+        xmlns => $self->{base_url} . 'doc/'. $self->{api_version} . '/',
+        ResourceIds => {
+            ResourceId => $args{resource_id}
+        }
+    );
+
+    my $xml = $self->{xs}->XMLout($data, SuppressEmpty => 1, NoSort => 1,
+        RootName => 'ListTagsForResourcesRequest');
+    $xml = $self->{xml_prolog} . $xml;
+
+    my $response = $self->_request('POST',
+    $self->{api_url} . 'tags/' . $resource_type,
+    { content => $xml });
+
+    if (!$response->{success}) {
+        $self->_parse_error($response->{content});
+        return;
+    }
+
+    $data = $self->{xs}->XMLin($response->{content});
+    $data = $data->{ResourceTagSets}->{ResourceTagSet};
+
+    my @tag_set;
+    if (ref $data eq 'HASH') {
+        push @tag_set, _parse_resource_tag_response($data);
+    } else {
+        foreach my $tag (@{$data}) {
+            push @tag_set, _parse_resource_tag_response($tag);
+        }
+    }
+
+    return \@tag_set;
+}
+
 =head2 error
 
 Returns the last error.
@@ -1384,6 +1610,23 @@ sub _parse_health_check_response {
     $health_check->{health_check_config} = $health_check_config;
 
     return $health_check;
+}
+
+sub _parse_resource_tag_response {
+    my ($data) = @_;
+
+    my $tags;
+    foreach my $t (@{$data->{Tags}->{Tag}}) {
+        $tags->{$t->{Key}} = $t->{Value};
+    }
+
+    my $tags_data = {
+        type => $data->{ResourceType},
+        id   => $data->{ResourceId},
+        tags => $tags,
+    };
+
+    return $tags_data;
 }
 
 1;
