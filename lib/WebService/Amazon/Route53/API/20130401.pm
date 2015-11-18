@@ -1315,6 +1315,36 @@ sub delete_health_check {
 
 =head2 change_tags_for_resource
 
+Adds tags to a health check or a hosted zone.
+
+    $response = $r53->change_tags_for_resource(
+        resource_type => 'hostedzone',
+        resource_id   => 'RESOURCEID',
+        remove_tag_keys  => ['key1', 'key2'],
+        add_tags => {
+            key1   => 'value1',
+            key2   => 'value2',
+        }
+    );
+
+Parameters:
+
+=over 4
+
+=item * resource_type
+
+B<(Required)> The type of resource to add, edit or delete tags,
+possible values are C<'healthcheck'> or C<'hostedzone'>.
+
+=item * resource_id
+
+B<(Required)> The ID of the health check or hosted zone to add, edit or delete tags.
+
+=back
+
+Returns: C<1> if the tags were successfully added, edited or deleted,
+a false value otherwise.
+
 =cut
 
 sub change_tags_for_resource {
@@ -1366,6 +1396,37 @@ sub change_tags_for_resource {
 
 =head2 list_tags_for_resource
 
+Lists tags for a health check or a hosted zone.
+
+    $response = $r53->list_tags_for_resource(
+        resource_type => 'hostedzone',
+        resource_id   => 'RESOURCEID'
+    );
+
+Parameters:
+
+=over 4
+
+=item * resource_type
+
+B<(Required)> The type of rescource to list tags, possible values are
+C<'healthcheck'> or C<'hostedzone'>.
+
+=item * resource_id
+
+B<(Required)> The ID of the health check or hosted zone to list tags.
+
+=back
+
+Returns: A reference to a hash containing the id, tags and type of the tags.
+Example:
+
+    $response = {
+        id => "RESOURCEID",
+        tags => { key1 => "value1", key2 => "value2" },
+        type => "hostedzone",
+    }
+
 =cut
 
 sub list_tags_for_resource {
@@ -1386,11 +1447,46 @@ sub list_tags_for_resource {
     $self->{api_url} . 'tags/' . $resource_type . '/' . $resource_id );
 
     my $data = $self->{xs}->XMLin($response->{content});
+    $data = $data->{ResourceTagSet};
 
     return _parse_resource_tag_response($data);
 }
 
 =head2 list_tags_for_resources
+
+Lists tags for up to 10 health checks or hosted zones.
+
+    my $response = $r53->list_tags_for_resources(
+        resource_type => 'hostedzone',
+        resource_id   => ['RESOURCEID1', 'RESOURCEID2']
+    );
+
+=item * resource_type
+
+B<(Required)> The type of rescource to list tags, possible values are
+C<'healthcheck'> or C<'hostedzone'>.
+
+=item * resource_id
+
+B<(Required)> The list of IDs of the health check or hosted zone to list tags.
+
+=back
+
+Returns: A reference to a array containing the id, tags and type of the tags.
+Example:
+
+    $response = [
+        {
+            id => "RESOURCEID1",
+            tags => { key1 => "value1", key2 => "value2" },
+            type => "hostedzone",
+        },
+        {
+            id => "RESOURCEID2",
+            tags => { key3 => "value3", key4 => "value4" },
+            type => "hostedzone",
+        },
+    ];
 
 =cut
 
@@ -1428,30 +1524,18 @@ sub list_tags_for_resources {
     }
 
     $data = $self->{xs}->XMLin($response->{content});
-    $data = $data->{ResourceTagSets};
+    $data = $data->{ResourceTagSets}->{ResourceTagSet};
 
-    return _parse_resource_tag_response($data);
-}
-
-=head2 _parse_resource_tag_response
-
-=cut
-
-sub _parse_resource_tag_response {
-    my ($data) = @_;
-
-    my $tags;
-    foreach my $t (@{$data->{ResourceTagSet}->{Tags}->{Tag}}) {
-        $tags->{$t->{Key}} = $t->{Value};
+    my @tag_set;
+    if (ref $data eq 'HASH') {
+        push @tag_set, _parse_resource_tag_response($data);
+    } else {
+        foreach my $tag (@{$data}) {
+            push @tag_set, _parse_resource_tag_response($tag);
+        }
     }
 
-    my $tags_data = {
-        type => $data->{ResourceTagSet}->{ResourceType},
-        id   => $data->{ResourceTagSet}->{ResourceId},
-        tags => $tags,
-    };
-
-    return $tags_data;
+    return \@tag_set;
 }
 
 =head2 error
@@ -1526,6 +1610,23 @@ sub _parse_health_check_response {
     $health_check->{health_check_config} = $health_check_config;
 
     return $health_check;
+}
+
+sub _parse_resource_tag_response {
+    my ($data) = @_;
+
+    my $tags;
+    foreach my $t (@{$data->{Tags}->{Tag}}) {
+        $tags->{$t->{Key}} = $t->{Value};
+    }
+
+    my $tags_data = {
+        type => $data->{ResourceType},
+        id   => $data->{ResourceId},
+        tags => $tags,
+    };
+
+    return $tags_data;
 }
 
 1;
